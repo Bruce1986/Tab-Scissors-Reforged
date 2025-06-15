@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Scissors Reforged",
+  "description": "Split and merge your Chrome tabs with ease.",
+  "version": "0.1.0",
+  "permissions": ["tabs", "windows"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Tab Scissors Reforged"
+  },
+  "background": {
+    "service_worker": "service-worker.js"
+  }
+}
