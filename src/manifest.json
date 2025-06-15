@@ -9,6 +9,7 @@
     "default_title": "Tab Scissors Reforged"
   },
   "background": {
-    "service_worker": "service-worker.js"
+    "service_worker": "service-worker.js",
+    "type": "module"
   }
 }
