@@ -89,6 +89,6 @@ This extension re-implements its core logic with a modern, maintainable foundati
 
 ## 📄 License
 
-MIT License © 2025-present \[Your Name / Organization]
+MIT License © 2025-present [Actual Name / Organization]
 
 ```
