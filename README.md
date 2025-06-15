@@ -1,7 +1,6 @@
 # ✂️ Tab Scissors Reforged
 
-A modern, lightweight Chrome extension to split and merge your tabs with elegance.
-It rebuilds the classic "Tab Scissors" using Manifest V3 and is actively maintained.
+A modern, lightweight Chrome extension to split and merge your tabs with elegance. It rebuilds the classic "Tab Scissors" using Manifest V3 and is actively maintained.
 
 ---
 
