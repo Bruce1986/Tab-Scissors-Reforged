@@ -22,7 +22,7 @@ Rebuild of the classic "Tab Scissors" with Manifest V3 and ongoing maintenance.
 
 ## 🧪 Installation (Dev Mode)
 
-1. Clone this repo or [download the ZIP](#).
+1. Clone this repo or [download the ZIP](YOUR_REPOSITORY_ZIP_DOWNLOAD_LINK_HERE).
 2. Go to `chrome://extensions/` in your browser.
 3. Enable **Developer Mode**.
 4. Click **"Load unpacked"** and select the project folder.
