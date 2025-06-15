@@ -22,7 +22,7 @@ Rebuild of the classic "Tab Scissors" with Manifest V3 and ongoing maintenance.
 
 ## 🧪 Installation (Dev Mode)
 
-1. Clone this repo or [download the ZIP](YOUR_REPOSITORY_ZIP_DOWNLOAD_LINK_HERE).
+1. Clone this repo.
 2. Go to `chrome://extensions/` in your browser.
 3. Enable **Developer Mode**.
 4. Click **"Load unpacked"** and select the project folder.
@@ -53,7 +53,7 @@ Rebuild of the classic "Tab Scissors" with Manifest V3 and ongoing maintenance.
 
 ```json
 "permissions": ["tabs", "windows"]
-````
+```
 
 These are needed to manipulate tab positions and window structures.
 
@@ -73,7 +73,7 @@ These are needed to manipulate tab positions and window structures.
 
 ## 🧠 Motivation
 
-The original [Tab Scissors](https://chromewebstore.google.com/detail/tab-scissors/) is no longer maintained and incompatible with modern versions of Chrome.
+The original Tab Scissors is no longer maintained and incompatible with modern versions of Chrome.
 This extension re-implements its core logic with a modern, maintainable foundation and optional new features.
 
 ---
@@ -89,6 +89,6 @@ This extension re-implements its core logic with a modern, maintainable foundati
 
 ## 📄 License
 
-MIT License © 2025-present [Actual Name / Organization]
+MIT License © 2025-present [Bruce Jhang]
 
 ```
