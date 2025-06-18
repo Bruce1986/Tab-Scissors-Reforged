@@ -3,7 +3,7 @@
  * @returns {Promise<void>}
  */
 export async function splitTabs() {
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!activeTab) return;
 
   const allTabsInWindow = await chrome.tabs.query({ currentWindow: true });
