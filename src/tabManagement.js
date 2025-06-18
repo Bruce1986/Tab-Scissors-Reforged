@@ -7,7 +7,7 @@ export async function splitTabs() {
   if (!activeTab) return;
 
   const allTabsInWindow = await chrome.tabs.query({ currentWindow: true });
-  // 按索引排序，確保順序正確
+  // Sort tabs by index to ensure correct order
   allTabsInWindow.sort((a, b) => a.index - b.index);
   
   const activeIndex = allTabsInWindow.findIndex(t => t.id === activeTab.id);
