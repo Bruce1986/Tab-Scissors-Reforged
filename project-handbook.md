@@ -87,7 +87,7 @@
 ## 📚 資源與文件連結
 
 * 🔗 Figma 設計稿：[點我前往](https://figma.com/xxxx)
-* 🔗 API 文件連結：[Swagger Docs](http://localhost:8000/docs)
+* 🔗 API 文件連結：[Swagger Docs](https://your-api-docs.com)
 * 🔗 技術指南 / Code Style：[點我查看](https://github.com/你的組織/code-style-guide)
 
 ---
