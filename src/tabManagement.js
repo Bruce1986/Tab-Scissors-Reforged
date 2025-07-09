@@ -29,23 +29,26 @@ export async function splitTabs() {
  * @returns {Promise<void>}
  */
 export async function mergeAllWindows() {
-  // 取得除了當前視窗以外的所有視窗
-  const currentWindow = await chrome.windows.getCurrent();
-  const windows = await chrome.windows.getAll({ populate: true });
+  // 取得除了當前視窗以外的所有視窗
+  const currentWindow = await chrome.windows.getCurrent();
+  const windows = await chrome.windows.getAll({ populate: true });
 
-  if (windows.length < 2) return;
+  if (windows.length < 2) return;
 
-  // 遍歷所有視窗
-  for (const win of windows) {
+  // 遍歷所有視窗
+  for (const win of windows) {
     // 如果是當前視窗，就跳過
-    if (win.id === currentWindow.id) continue;
+    if (win.id === currentWindow.id) continue;
     // 如果視窗沒有分頁，也跳過
     if (!win.tabs || win.tabs.length === 0) continue;
 
     // 將其他視窗的所有分頁ID收集起來
-    const tabIds = win.tabs.map(t => t.id);
+    const tabIds = win.tabs.map(t => t.id);
     // 將這些分頁移至當前視窗的最後
-    await chrome.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
-  }
+    await chrome.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
+
+    // 移除原來的視窗
+    await chrome.windows.remove(win.id);
+  }
 
 }

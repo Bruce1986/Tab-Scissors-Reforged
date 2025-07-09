@@ -8,6 +8,7 @@ global.chrome = {
   },
   windows: {
     create: jest.fn(),
+    getCurrent: jest.fn(),
     getAll: jest.fn(),
     remove: jest.fn()
   }
@@ -39,6 +40,7 @@ describe('mergeAllWindows', () => {
   });
 
   test('moves tabs from other windows and closes them', async () => {
+    chrome.windows.getCurrent.mockResolvedValue({ id: 1 });
     chrome.windows.getAll.mockResolvedValue([
       { id: 1, tabs: [{ id: 10 }] },
       { id: 2, tabs: [{ id: 20 }, { id: 21 }] }
