@@ -47,8 +47,12 @@ export async function mergeAllWindows() {
     // 將這些分頁移至當前視窗的最後
     await chrome.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
 
-    // 移除原來的視窗
-    await chrome.windows.remove(win.id);
+    // 移除原來的視窗，若失敗則記錄錯誤
+    try {
+      await chrome.windows.remove(win.id);
+    } catch (error) {
+      console.error(`Failed to remove window ${win.id}:`, error);
+    }
   }
 
 }

@@ -37,10 +37,10 @@ describe('splitTabs', () => {
 describe('mergeAllWindows', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    chrome.windows.getCurrent.mockResolvedValue({ id: 1 });
   });
 
   test('moves tabs from other windows and closes them', async () => {
-    chrome.windows.getCurrent.mockResolvedValue({ id: 1 });
     chrome.windows.getAll.mockResolvedValue([
       { id: 1, tabs: [{ id: 10 }] },
       { id: 2, tabs: [{ id: 20 }, { id: 21 }] }
@@ -50,5 +50,20 @@ describe('mergeAllWindows', () => {
 
     expect(chrome.tabs.move).toHaveBeenCalledWith([20, 21], { windowId: 1, index: -1 });
     expect(chrome.windows.remove).toHaveBeenCalledWith(2);
+  });
+
+  test('logs error if window removal fails', async () => {
+    const error = new Error('Removal failed');
+    chrome.windows.getAll.mockResolvedValue([
+      { id: 1, tabs: [{ id: 10 }] },
+      { id: 2, tabs: [{ id: 20 }] }
+    ]);
+    chrome.windows.remove.mockRejectedValue(error);
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await mergeAllWindows();
+
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to remove window 2:', error);
+    consoleSpy.mockRestore();
   });
 });
