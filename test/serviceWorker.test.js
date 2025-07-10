@@ -30,4 +30,10 @@ describe('handleMessage', () => {
     expect(splitTabs).not.toHaveBeenCalled();
     expect(mergeAllWindows).not.toHaveBeenCalled();
   });
+
+  test('handles null message gracefully', () => {
+    handleMessage(null);
+    expect(splitTabs).not.toHaveBeenCalled();
+    expect(mergeAllWindows).not.toHaveBeenCalled();
+  });
 });

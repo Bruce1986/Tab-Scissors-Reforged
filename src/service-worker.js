@@ -6,9 +6,9 @@ import { splitTabs, mergeAllWindows } from './tabManagement.js';
  * @param {object} message - runtime message
  */
 export function handleMessage(message) {
-  if (message.action === 'split') {
+  if (message?.action === 'split') {
     splitTabs();
-  } else if (message.action === 'merge') {
+  } else if (message?.action === 'merge') {
     mergeAllWindows();
   }
 }
