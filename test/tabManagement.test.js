@@ -1,22 +1,26 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { splitTabs, mergeAllWindows } from '../src/tabManagement.js';
 
+// Helper function to create a mock of the Chrome API for test isolation
+const createChromeApiMock = () => {
+  global.chrome = {
+    tabs: {
+      query: jest.fn(),
+      move: jest.fn().mockResolvedValue(undefined),
+      remove: jest.fn().mockResolvedValue(undefined),
+    },
+    windows: {
+      create: jest.fn(),
+      getCurrent: jest.fn(),
+      getAll: jest.fn(),
+      remove: jest.fn().mockResolvedValue(undefined),
+    },
+  };
+};
+
 describe('splitTabs', () => {
   beforeEach(() => {
-    // Mock chrome APIs for each test to ensure isolation
-    global.chrome = {
-      tabs: {
-        query: jest.fn(),
-        move: jest.fn().mockResolvedValue(undefined),
-        remove: jest.fn().mockResolvedValue(undefined),
-      },
-      windows: {
-        create: jest.fn(),
-        getCurrent: jest.fn(),
-        getAll: jest.fn(),
-        remove: jest.fn(),
-      },
-    };
+    createChromeApiMock();
   });
 
   test('should move tabs to the right of the active tab to a new window', async () => {
@@ -107,24 +111,38 @@ describe('splitTabs', () => {
     expect(chrome.tabs.move).not.toHaveBeenCalled();
     expect(chrome.tabs.remove).not.toHaveBeenCalled();
   });
+
+  test('should clean up if moving tabs fails', async () => {
+    // Arrange
+    const activeTab = { id: 1, index: 0 };
+    const tabsToMove = [{ id: 2, index: 1 }];
+    const allTabs = [activeTab, ...tabsToMove];
+    const newWindow = { id: 100, tabs: [{ id: 99 }] };
+    const moveError = new Error('Failed to move tabs');
+
+    chrome.tabs.query.mockResolvedValueOnce([activeTab]);
+    chrome.tabs.query.mockResolvedValueOnce(allTabs);
+    chrome.windows.create.mockResolvedValue(newWindow);
+    chrome.tabs.move.mockRejectedValue(moveError); // Simulate move failure
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Act
+    await splitTabs();
+
+    // Assert
+    expect(chrome.windows.create).toHaveBeenCalledWith({ state: 'normal' });
+    expect(chrome.tabs.move).toHaveBeenCalledWith([2], { windowId: newWindow.id, index: -1 });
+    expect(console.error).toHaveBeenCalledWith('Failed to move tabs:', moveError);
+    expect(chrome.windows.remove).toHaveBeenCalledWith(newWindow.id);
+    expect(chrome.tabs.remove).not.toHaveBeenCalled();
+
+    consoleSpy.mockRestore();
+  });
 });
 
 describe('mergeAllWindows', () => {
   beforeEach(() => {
-    // Mock chrome APIs for each test
-    global.chrome = {
-      tabs: {
-        query: jest.fn(),
-        move: jest.fn().mockResolvedValue(undefined),
-        remove: jest.fn().mockResolvedValue(undefined),
-      },
-      windows: {
-        create: jest.fn(),
-        getCurrent: jest.fn(),
-        getAll: jest.fn(),
-        remove: jest.fn().mockResolvedValue(undefined),
-      },
-    };
+    createChromeApiMock();
     // Common setup for mergeAllWindows tests
     chrome.windows.getCurrent.mockResolvedValue({ id: 1 });
   });

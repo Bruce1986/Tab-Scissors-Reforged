@@ -17,7 +17,7 @@ export async function splitTabs() {
 
   const tabIdsToMove = tabsToMove.map(t => t.id);
 
-  // 建立一個新視窗，然後將分頁組移動過去
+  // Create a new window, then move the tabs over.
   const newWindow = await chrome.windows.create({ state: 'normal' });
 
   // Get the initial tab that comes with the new window.
@@ -29,8 +29,15 @@ export async function splitTabs() {
     return;
   }
 
-  // Move the desired tabs to the new window.
-  await chrome.tabs.move(tabIdsToMove, { windowId: newWindow.id, index: -1 });
+  try {
+    // Move the desired tabs to the new window.
+    await chrome.tabs.move(tabIdsToMove, { windowId: newWindow.id, index: -1 });
+  } catch (error) {
+    console.error('Failed to move tabs:', error);
+    // Clean up the new window if the move fails.
+    await chrome.windows.remove(newWindow.id);
+    return;
+  }
 
   // Remove the initial blank tab.
   await chrome.tabs.remove(initialTab.id);
@@ -41,25 +48,25 @@ export async function splitTabs() {
  * @returns {Promise<void>}
  */
 export async function mergeAllWindows() {
-  // 取得除了當前視窗以外的所有視窗
+  // Get the current window and all other windows.
   const currentWindow = await chrome.windows.getCurrent();
   const windows = await chrome.windows.getAll({ populate: true });
 
   if (windows.length < 2) return;
 
-  // 遍歷所有視窗
+  // Iterate over all windows.
   for (const win of windows) {
-    // 如果是當前視窗，就跳過
+    // Skip the current window.
     if (win.id === currentWindow.id) continue;
-    // 如果視窗沒有分頁，也跳過
+    // Skip windows without tabs.
     if (!win.tabs || win.tabs.length === 0) continue;
 
-    // 將其他視窗的所有分頁ID收集起來
+    // Collect the IDs of all tabs in the other window.
     const tabIds = win.tabs.map(t => t.id);
-    // 將這些分頁移至當前視窗的最後
+    // Move the tabs to the current window.
     await chrome.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
 
-    // 移除原來的視窗，若失敗則記錄錯誤
+    // Remove the original window, logging an error on failure.
     try {
       await chrome.windows.remove(win.id);
     } catch (error) {
