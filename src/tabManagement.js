@@ -23,8 +23,9 @@ export async function splitTabs() {
   // Get the initial tab that comes with the new window.
   const initialTab = newWindow.tabs?.[0];
 
-  // If the new window is unexpectedly empty, clean it up and exit.
+  // If the new window is unexpectedly empty, log an error, clean up, and exit.
   if (!initialTab) {
+    console.error(`Newly created window ${newWindow.id} has no initial tab.`);
     await chrome.windows.remove(newWindow.id);
     return;
   }
@@ -39,8 +40,12 @@ export async function splitTabs() {
     return;
   }
 
-  // Remove the initial blank tab.
-  await chrome.tabs.remove(initialTab.id);
+  // Remove the initial blank tab, handling potential errors.
+  try {
+    await chrome.tabs.remove(initialTab.id);
+  } catch (error) {
+    console.error(`Failed to remove initial tab ${initialTab.id}:`, error);
+  }
 }
 
 /**
