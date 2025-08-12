@@ -17,11 +17,17 @@ export async function splitTabs() {
 
   const tabIdsToMove = tabsToMove.map(t => t.id);
 
-  // 建立一個新視窗，並直接將所有目標分頁移入
-  const newWindow = await chrome.windows.create({ tabId: tabIdsToMove[0] });
-  if (tabIdsToMove.length > 1) {
-    await chrome.tabs.move(tabIdsToMove.slice(1), { windowId: newWindow.id, index: -1 });
-  }
+  // 建立一個新視窗，然後將分頁組移動過去
+  const newWindow = await chrome.windows.create({ state: 'normal' });
+
+  // 新視窗會帶有一個空白分頁，這裡取得它的 ID 以便後續移除
+  const initialTabId = newWindow.tabs[0].id;
+
+  // 將目標分頁們移至新視窗
+  await chrome.tabs.move(tabIdsToMove, { windowId: newWindow.id, index: -1 });
+
+  // 移除最初的空白分頁
+  await chrome.tabs.remove(initialTabId);
 }
 
 /**
