@@ -20,14 +20,20 @@ export async function splitTabs() {
   // 建立一個新視窗，然後將分頁組移動過去
   const newWindow = await chrome.windows.create({ state: 'normal' });
 
-  // 新視窗會帶有一個空白分頁，這裡取得它的 ID 以便後續移除
-  const initialTabId = newWindow.tabs[0].id;
+  // Get the initial tab that comes with the new window.
+  const initialTab = newWindow.tabs?.[0];
 
-  // 將目標分頁們移至新視窗
+  // If the new window is unexpectedly empty, clean it up and exit.
+  if (!initialTab) {
+    await chrome.windows.remove(newWindow.id);
+    return;
+  }
+
+  // Move the desired tabs to the new window.
   await chrome.tabs.move(tabIdsToMove, { windowId: newWindow.id, index: -1 });
 
-  // 移除最初的空白分頁
-  await chrome.tabs.remove(initialTabId);
+  // Remove the initial blank tab.
+  await chrome.tabs.remove(initialTab.id);
 }
 
 /**

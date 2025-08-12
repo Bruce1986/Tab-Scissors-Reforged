@@ -86,6 +86,27 @@ describe('splitTabs', () => {
     // Assert
     expect(chrome.windows.create).not.toHaveBeenCalled();
   });
+
+  test('should clean up if the new window is unexpectedly empty', async () => {
+    // Arrange
+    const activeTab = { id: 1, index: 0 };
+    const tabsToMove = [{ id: 2, index: 1 }];
+    const allTabs = [activeTab, ...tabsToMove];
+    const newWindow = { id: 100, tabs: [] }; // Window with no tabs
+
+    chrome.tabs.query.mockResolvedValueOnce([activeTab]);
+    chrome.tabs.query.mockResolvedValueOnce(allTabs);
+    chrome.windows.create.mockResolvedValue(newWindow);
+
+    // Act
+    await splitTabs();
+
+    // Assert
+    expect(chrome.windows.create).toHaveBeenCalledWith({ state: 'normal' });
+    expect(chrome.windows.remove).toHaveBeenCalledWith(newWindow.id);
+    expect(chrome.tabs.move).not.toHaveBeenCalled();
+    expect(chrome.tabs.remove).not.toHaveBeenCalled();
+  });
 });
 
 describe('mergeAllWindows', () => {
