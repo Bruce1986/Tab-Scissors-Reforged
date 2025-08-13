@@ -179,4 +179,20 @@ describe('mergeAllWindows', () => {
     expect(console.error).toHaveBeenCalledWith('Failed to remove window 2:', removeError);
     consoleSpy.mockRestore();
   });
+
+  test('should do nothing if no other windows have tabs', async () => {
+    // Arrange
+    const windows = [
+      { id: 1, tabs: [{ id: 10 }] },
+      { id: 2, tabs: [] } // other window has no tabs
+    ];
+    chrome.windows.getAll.mockResolvedValue(windows);
+
+    // Act
+    await mergeAllWindows();
+
+    // Assert
+    expect(chrome.tabs.move).not.toHaveBeenCalled();
+    expect(chrome.windows.remove).not.toHaveBeenCalled();
+  });
 });

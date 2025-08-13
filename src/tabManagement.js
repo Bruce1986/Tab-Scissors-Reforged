@@ -57,17 +57,18 @@ export async function mergeAllWindows() {
   const currentWindow = await chrome.windows.getCurrent();
   const windows = await chrome.windows.getAll({ populate: true });
 
-  if (windows.length < 2) return;
+  // Filter for other windows that have tabs to merge.
+  const windowsToMerge = windows.filter(
+    (win) => win.id !== currentWindow.id && win.tabs && win.tabs.length > 0
+  );
 
-  // Iterate over all windows.
-  for (const win of windows) {
-    // Skip the current window.
-    if (win.id === currentWindow.id) continue;
-    // Skip windows without tabs.
-    if (!win.tabs || win.tabs.length === 0) continue;
+  if (windowsToMerge.length === 0) return;
 
+  // Iterate over the windows that need to be merged.
+  for (const win of windowsToMerge) {
     // Collect the IDs of all tabs in the other window.
-    const tabIds = win.tabs.map(t => t.id);
+    const tabIds = win.tabs.map((t) => t.id);
+
     // Move the tabs to the current window.
     await chrome.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
 
@@ -78,5 +79,4 @@ export async function mergeAllWindows() {
       console.error(`Failed to remove window ${win.id}:`, error);
     }
   }
-
 }
