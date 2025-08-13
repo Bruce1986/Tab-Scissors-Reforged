@@ -26,7 +26,11 @@ export async function splitTabs() {
   // If the new window is unexpectedly empty, log an error, clean up, and exit.
   if (!initialTab) {
     console.error(`Newly created window ${newWindow.id} has no initial tab.`);
-    await chrome.windows.remove(newWindow.id);
+    try {
+      await chrome.windows.remove(newWindow.id);
+    } catch (cleanupError) {
+      console.error(`Failed to clean up window ${newWindow.id}:`, cleanupError);
+    }
     return;
   }
 
@@ -36,7 +40,11 @@ export async function splitTabs() {
   } catch (error) {
     console.error('Failed to move tabs:', error);
     // Clean up the new window if the move fails.
-    await chrome.windows.remove(newWindow.id);
+    try {
+      await chrome.windows.remove(newWindow.id);
+    } catch (cleanupError) {
+      console.error(`Failed to clean up window ${newWindow.id} after move failed:`, cleanupError);
+    }
     return;
   }
 
@@ -66,17 +74,21 @@ export async function mergeAllWindows() {
 
   // Iterate over the windows that need to be merged.
   for (const win of windowsToMerge) {
-    // Collect the IDs of all tabs in the other window.
-    const tabIds = win.tabs.map((t) => t.id);
-
-    // Move the tabs to the current window.
-    await chrome.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
-
-    // Remove the original window, logging an error on failure.
     try {
+      // Collect the IDs of all tabs in the other window.
+      const tabIds = win.tabs.map((t) => t.id);
+
+      // Move the tabs to the current window.
+      await chrome.tabs.move(tabIds, {
+        windowId: currentWindow.id,
+        index: -1,
+      });
+
+      // Remove the original window, now that tabs are moved.
       await chrome.windows.remove(win.id);
     } catch (error) {
-      console.error(`Failed to remove window ${win.id}:`, error);
+      // Log an error and continue to the next window.
+      console.error(`Failed to merge window ${win.id}:`, error);
     }
   }
 }

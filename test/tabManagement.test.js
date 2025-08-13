@@ -69,48 +69,50 @@ describe('splitTabs', () => {
     expect(chrome.windows.create).not.toHaveBeenCalled();
   });
 
-  test('should clean up and log error if the new window is unexpectedly empty', async () => {
+  test('should log cleanup error if cleanup fails for an empty window', async () => {
     // Arrange
     const activeTab = { id: 1, index: 0 };
     const allTabs = [activeTab, { id: 2, index: 1 }];
     const newWindow = { id: 100, tabs: [] };
+    const cleanupError = new Error('Failed to remove window');
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     chrome.tabs.query.mockResolvedValueOnce([activeTab]);
     chrome.tabs.query.mockResolvedValueOnce(allTabs);
     chrome.windows.create.mockResolvedValue(newWindow);
+    chrome.windows.remove.mockRejectedValue(cleanupError); // Simulate cleanup failure
 
     // Act
     await splitTabs();
 
     // Assert
     expect(console.error).toHaveBeenCalledWith(`Newly created window ${newWindow.id} has no initial tab.`);
-    expect(chrome.windows.remove).toHaveBeenCalledWith(newWindow.id);
-    expect(chrome.tabs.move).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith(`Failed to clean up window ${newWindow.id}:`, cleanupError);
 
     consoleSpy.mockRestore();
   });
 
-  test('should clean up if moving tabs fails', async () => {
+  test('should log cleanup error if cleanup fails after a move failure', async () => {
     // Arrange
     const activeTab = { id: 1, index: 0 };
     const allTabs = [activeTab, { id: 2, index: 1 }];
     const newWindow = { id: 100, tabs: [{ id: 99 }] };
     const moveError = new Error('Failed to move');
+    const cleanupError = new Error('Failed to remove window');
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     chrome.tabs.query.mockResolvedValueOnce([activeTab]);
     chrome.tabs.query.mockResolvedValueOnce(allTabs);
     chrome.windows.create.mockResolvedValue(newWindow);
     chrome.tabs.move.mockRejectedValue(moveError);
+    chrome.windows.remove.mockRejectedValue(cleanupError); // Simulate cleanup failure
 
     // Act
     await splitTabs();
 
     // Assert
     expect(console.error).toHaveBeenCalledWith('Failed to move tabs:', moveError);
-    expect(chrome.windows.remove).toHaveBeenCalledWith(newWindow.id);
-    expect(chrome.tabs.remove).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith(`Failed to clean up window ${newWindow.id} after move failed:`, cleanupError);
 
     consoleSpy.mockRestore();
   });
@@ -176,7 +178,7 @@ describe('mergeAllWindows', () => {
     await mergeAllWindows();
 
     // Assert
-    expect(console.error).toHaveBeenCalledWith('Failed to remove window 2:', removeError);
+    expect(console.error).toHaveBeenCalledWith('Failed to merge window 2:', removeError);
     consoleSpy.mockRestore();
   });
 
@@ -194,5 +196,51 @@ describe('mergeAllWindows', () => {
     // Assert
     expect(chrome.tabs.move).not.toHaveBeenCalled();
     expect(chrome.windows.remove).not.toHaveBeenCalled();
+  });
+
+  test('should continue merging other windows if one fails', async () => {
+    // Arrange
+    const windows = [
+      { id: 1, tabs: [{ id: 10 }] },
+      { id: 2, tabs: [{ id: 20 }] }, // This one will fail
+      { id: 3, tabs: [{ id: 30 }] }, // This one should still be merged
+    ];
+    const moveError = new Error('Failed to move tabs');
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(
+      () => {}
+    );
+
+    chrome.windows.getAll.mockResolvedValue(windows);
+    // Fail the first move, then succeed on the second
+    chrome.tabs.move
+      .mockRejectedValueOnce(moveError)
+      .mockResolvedValueOnce(undefined);
+
+    // Act
+    await mergeAllWindows();
+
+    // Assert
+    // Check that it tried to move tabs for the failing window
+    expect(chrome.tabs.move).toHaveBeenCalledWith([20], {
+      windowId: 1,
+      index: -1,
+    });
+    // Check that the error was logged
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to merge window 2:',
+      moveError
+    );
+
+    // Check that it still merged the next window
+    expect(chrome.tabs.move).toHaveBeenCalledWith([30], {
+      windowId: 1,
+      index: -1,
+    });
+    // Check that it removed the successfully merged window
+    expect(chrome.windows.remove).toHaveBeenCalledWith(3);
+    // Check that it did NOT remove the failed window
+    expect(chrome.windows.remove).not.toHaveBeenCalledWith(2);
+
+    consoleSpy.mockRestore();
   });
 });
