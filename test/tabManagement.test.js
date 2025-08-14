@@ -237,15 +237,17 @@ describe('mergeAllWindows', () => {
       { id: 3, tabs: [{ id: 30 }] }, // This one should still be merged
     ];
     const moveError = new Error('Failed to move tabs');
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(
-      () => {}
-    );
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     chrome.windows.getAll.mockResolvedValue(windows);
-    // Fail the first move, then succeed on the second
-    chrome.tabs.move
-      .mockRejectedValueOnce(moveError)
-      .mockResolvedValueOnce(undefined);
+    // Mock 'move' to fail for a specific set of tabs.
+    // This is more robust for parallel execution than mockRejectedValueOnce.
+    chrome.tabs.move.mockImplementation(async (tabIds) => {
+      if (tabIds.includes(20)) {
+        throw moveError;
+      }
+      return undefined;
+    });
 
     // Act
     await mergeAllWindows();
