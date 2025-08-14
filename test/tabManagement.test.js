@@ -167,6 +167,23 @@ describe('splitTabs', () => {
     expect(console.error).toHaveBeenCalledWith(`Failed to remove initial tab ${initialTab.id}:`, removeError);
     consoleSpy.mockRestore();
   });
+
+  test('should log top-level error if initial tab query fails', async () => {
+    // Arrange
+    const queryError = new Error('Failed to query tabs');
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    chrome.tabs.query.mockRejectedValue(queryError);
+
+    // Act
+    await splitTabs();
+
+    // Assert
+    expect(console.error).toHaveBeenCalledWith(
+      'An unexpected error occurred in splitTabs:',
+      queryError
+    );
+    consoleSpy.mockRestore();
+  });
 });
 
 describe('mergeAllWindows', () => {
@@ -270,6 +287,23 @@ describe('mergeAllWindows', () => {
     // Check that it did NOT remove the failed window
     expect(chrome.windows.remove).not.toHaveBeenCalledWith(2);
 
+    consoleSpy.mockRestore();
+  });
+
+  test('should log top-level error if initial windows query fails', async () => {
+    // Arrange
+    const queryError = new Error('Failed to get windows');
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    chrome.windows.getAll.mockRejectedValue(queryError);
+
+    // Act
+    await mergeAllWindows();
+
+    // Assert
+    expect(console.error).toHaveBeenCalledWith(
+      'An unexpected error occurred in mergeAllWindows:',
+      queryError
+    );
     consoleSpy.mockRestore();
   });
 });
