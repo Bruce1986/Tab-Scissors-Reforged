@@ -21,7 +21,7 @@ export async function splitTabs() {
   const newWindow = await chrome.windows.create({ state: 'normal' });
 
   // Get the initial tab that comes with the new window.
-  const initialTab = newWindow.tabs?.[0];
+  const [initialTab] = await chrome.tabs.query({ windowId: newWindow.id });
 
   // If the new window is unexpectedly empty, log an error, clean up, and exit.
   if (!initialTab) {
