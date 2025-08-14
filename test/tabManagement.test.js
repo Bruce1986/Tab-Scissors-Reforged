@@ -61,72 +61,70 @@ describe('splitTabs', () => {
     expect(chrome.windows.create).not.toHaveBeenCalled();
   });
 
-  test('should not create a new window if no active tab is found', async () => {
+  test('should log top-level error if active tab query fails', async () => {
     // Arrange
-    chrome.tabs.query.mockResolvedValueOnce([]); // No active tab found
+    const queryError = new Error('Failed to query active tab');
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    chrome.tabs.query.mockRejectedValue(queryError);
 
     // Act
     await splitTabs();
 
     // Assert
-    expect(chrome.windows.create).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('An unexpected error occurred in splitTabs:', queryError);
+    consoleSpy.mockRestore();
   });
 
-  test('should clean up and log error if new window has no initial tab', async () => {
+  test('should log top-level error if window creation fails', async () => {
+    // Arrange
+    const activeTab = { id: 1, index: 0 };
+    const allTabs = [activeTab, { id: 2, index: 1 }];
+    const createError = new Error('Failed to create window');
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    chrome.tabs.query
+      .mockResolvedValueOnce([activeTab])
+      .mockResolvedValueOnce(allTabs);
+    chrome.windows.create.mockRejectedValue(createError);
+
+    // Act
+    await splitTabs();
+
+    // Assert
+    expect(console.error).toHaveBeenCalledWith('An unexpected error occurred in splitTabs:', createError);
+    consoleSpy.mockRestore();
+  });
+
+  test('should clean up if querying for initial tab fails', async () => {
     // Arrange
     const activeTab = { id: 1, index: 0 };
     const allTabs = [activeTab, { id: 2, index: 1 }];
     const newWindow = { id: 100 };
+    const queryError = new Error('Query for initial tab failed');
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     chrome.tabs.query
       .mockResolvedValueOnce([activeTab])
       .mockResolvedValueOnce(allTabs)
-      .mockResolvedValueOnce([]); // No initial tab found
+      .mockRejectedValueOnce(queryError); // Fail the third query
     chrome.windows.create.mockResolvedValue(newWindow);
 
     // Act
     await splitTabs();
 
     // Assert
-    expect(console.error).toHaveBeenCalledWith(`Newly created window ${newWindow.id} has no initial tab.`);
+    expect(console.error).toHaveBeenCalledWith('Failed to prepare the new window or move tabs:', queryError);
     expect(chrome.windows.remove).toHaveBeenCalledWith(newWindow.id);
-    expect(chrome.tabs.move).not.toHaveBeenCalled();
     consoleSpy.mockRestore();
   });
 
-  test('should log error if cleanup fails for an empty new window', async () => {
-    // Arrange
-    const activeTab = { id: 1, index: 0 };
-    const allTabs = [activeTab, { id: 2, index: 1 }];
-    const newWindow = { id: 100 };
-    const cleanupError = new Error('Cleanup failed');
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    chrome.tabs.query
-      .mockResolvedValueOnce([activeTab])
-      .mockResolvedValueOnce(allTabs)
-      .mockResolvedValueOnce([]); // No initial tab
-    chrome.windows.create.mockResolvedValue(newWindow);
-    chrome.windows.remove.mockRejectedValue(cleanupError);
-
-    // Act
-    await splitTabs();
-
-    // Assert
-    expect(console.error).toHaveBeenCalledWith(`Newly created window ${newWindow.id} has no initial tab.`);
-    expect(console.error).toHaveBeenCalledWith(`Failed to clean up window ${newWindow.id}:`, cleanupError);
-    consoleSpy.mockRestore();
-  });
-
-  test('should log cleanup error if cleanup fails after a move failure', async () => {
+  test('should clean up if moving tabs fails', async () => {
     // Arrange
     const activeTab = { id: 1, index: 0 };
     const allTabs = [activeTab, { id: 2, index: 1 }];
     const newWindow = { id: 100 };
     const initialTab = { id: 99 };
     const moveError = new Error('Move failed');
-    const cleanupError = new Error('Cleanup failed');
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     chrome.tabs.query
@@ -135,18 +133,17 @@ describe('splitTabs', () => {
       .mockResolvedValueOnce([initialTab]);
     chrome.windows.create.mockResolvedValue(newWindow);
     chrome.tabs.move.mockRejectedValue(moveError);
-    chrome.windows.remove.mockRejectedValue(cleanupError);
 
     // Act
     await splitTabs();
 
     // Assert
-    expect(console.error).toHaveBeenCalledWith('Failed to move tabs:', moveError);
-    expect(console.error).toHaveBeenCalledWith(`Failed to clean up window ${newWindow.id} after move failed:`, cleanupError);
+    expect(console.error).toHaveBeenCalledWith('Failed to prepare the new window or move tabs:', moveError);
+    expect(chrome.windows.remove).toHaveBeenCalledWith(newWindow.id);
     consoleSpy.mockRestore();
   });
 
-  test('should log error but not crash if removing the initial tab fails', async () => {
+  test('should not clean up if final tab removal fails', async () => {
     // Arrange
     const activeTab = { id: 1, index: 0 };
     const allTabs = [activeTab, { id: 2, index: 1 }];
@@ -162,26 +159,14 @@ describe('splitTabs', () => {
     chrome.windows.create.mockResolvedValue(newWindow);
     chrome.tabs.remove.mockRejectedValue(removeError);
 
-    // Act & Assert
-    await expect(splitTabs()).resolves.not.toThrow();
-    expect(console.error).toHaveBeenCalledWith(`Failed to remove initial tab ${initialTab.id}:`, removeError);
-    consoleSpy.mockRestore();
-  });
-
-  test('should log top-level error if initial tab query fails', async () => {
-    // Arrange
-    const queryError = new Error('Failed to query tabs');
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    chrome.tabs.query.mockRejectedValue(queryError);
-
     // Act
     await splitTabs();
 
     // Assert
-    expect(console.error).toHaveBeenCalledWith(
-      'An unexpected error occurred in splitTabs:',
-      queryError
-    );
+    expect(console.error).toHaveBeenCalledWith(`Failed to remove initial tab ${initialTab.id}:`, removeError);
+    // Ensure the main cleanup was NOT called for this specific error
+    expect(console.error).not.toHaveBeenCalledWith('Failed to prepare the new window or move tabs:', expect.any(Error));
+    expect(chrome.windows.remove).not.toHaveBeenCalled();
     consoleSpy.mockRestore();
   });
 });

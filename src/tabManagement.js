@@ -11,7 +11,6 @@ export async function splitTabs() {
     if (!activeTab) return;
 
     const allTabsInWindow = await chrome.tabs.query({ currentWindow: true });
-    // Sort tabs by index to ensure correct order
     allTabsInWindow.sort((a, b) => a.index - b.index);
 
     const activeIndex = allTabsInWindow.findIndex((t) => t.id === activeTab.id);
@@ -21,51 +20,45 @@ export async function splitTabs() {
 
     const tabIdsToMove = tabsToMove.map((t) => t.id);
 
-    // Create a new window, then move the tabs over.
     const newWindow = await chrome.windows.create({ state: 'normal' });
 
-    // Get the initial tab that comes with the new window.
-    const [initialTab] = await chrome.tabs.query({ windowId: newWindow.id });
+    // All operations after window creation are wrapped in a try/catch
+    // to ensure the new window is cleaned up on any failure.
+    try {
+      // Get the initial tab that comes with the new window.
+      const [initialTab] = await chrome.tabs.query({ windowId: newWindow.id });
 
-    // If the new window is unexpectedly empty, log an error, clean up, and exit.
-    if (!initialTab) {
-      console.error(`Newly created window ${newWindow.id} has no initial tab.`);
-      try {
-        await chrome.windows.remove(newWindow.id);
-      } catch (cleanupError) {
-        console.error(
-          `Failed to clean up window ${newWindow.id}:`,
-          cleanupError
+      // If the new window is unexpectedly empty, throw to trigger cleanup.
+      if (!initialTab) {
+        throw new Error(
+          `Newly created window ${newWindow.id} has no initial tab.`
         );
       }
-      return;
-    }
 
-    try {
       // Move the desired tabs to the new window.
       await chrome.tabs.move(tabIdsToMove, {
         windowId: newWindow.id,
         index: -1,
       });
+
+      // If removing the initial tab fails, we don't want to close the new window,
+      // so it has its own separate try/catch.
+      try {
+        await chrome.tabs.remove(initialTab.id);
+      } catch (error) {
+        console.error(`Failed to remove initial tab ${initialTab.id}:`, error);
+      }
     } catch (error) {
-      console.error('Failed to move tabs:', error);
-      // Clean up the new window if the move fails.
+      console.error('Failed to prepare the new window or move tabs:', error);
+      // Clean up the new window if any step in the process fails.
       try {
         await chrome.windows.remove(newWindow.id);
       } catch (cleanupError) {
         console.error(
-          `Failed to clean up window ${newWindow.id} after move failed:`,
+          `Failed to clean up window ${newWindow.id} after an error:`,
           cleanupError
         );
       }
-      return;
-    }
-
-    // Remove the initial blank tab, handling potential errors.
-    try {
-      await chrome.tabs.remove(initialTab.id);
-    } catch (error) {
-      console.error(`Failed to remove initial tab ${initialTab.id}:`, error);
     }
   } catch (error) {
     console.error('An unexpected error occurred in splitTabs:', error);
