@@ -4,13 +4,9 @@
  */
 export async function splitTabs() {
   try {
-    const [activeTab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-    if (!activeTab) return;
-
     const allTabsInWindow = await chrome.tabs.query({ currentWindow: true });
+    const activeTab = allTabsInWindow.find((t) => t.active);
+    if (!activeTab) return;
 
     const activeIndex = allTabsInWindow.findIndex((t) => t.id === activeTab.id);
     const tabsToMove = allTabsInWindow.slice(activeIndex + 1);
@@ -70,9 +66,15 @@ export async function splitTabs() {
  */
 export async function mergeAllWindows() {
   try {
-    // Get the current window and all other windows.
-    const currentWindow = await chrome.windows.getCurrent();
+    // Get all windows and find the currently focused one.
     const windows = await chrome.windows.getAll({ populate: true });
+    const currentWindow = windows.find((w) => w.focused);
+
+    // If no window is focused, we cannot merge.
+    if (!currentWindow) {
+      console.error('Could not find a focused window to merge tabs into.');
+      return;
+    }
 
     // Filter for other windows that have tabs to merge.
     const windowsToMerge = windows.filter(

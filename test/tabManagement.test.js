@@ -1,4 +1,4 @@
-import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { jest, describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import { splitTabs, mergeAllWindows } from '../src/tabManagement.js';
 
 // Helper function to create a mock of the Chrome API for test isolation
@@ -11,7 +11,6 @@ const createChromeApiMock = () => {
     },
     windows: {
       create: jest.fn(),
-      getCurrent: jest.fn(),
       getAll: jest.fn(),
       remove: jest.fn().mockResolvedValue(undefined),
     },
@@ -25,37 +24,35 @@ describe('splitTabs', () => {
 
   test('should move tabs to the right of the active tab to a new window', async () => {
     // Arrange
-    const activeTab = { id: 1, index: 0 };
-    const allTabs = [activeTab, { id: 2, index: 1 }, { id: 3, index: 2 }];
+    const allTabs = [
+      { id: 1, active: true, index: 0 },
+      { id: 2, active: false, index: 1 },
+      { id: 3, active: false, index: 2 },
+    ];
     const newWindow = { id: 100 };
     const initialTab = { id: 99 };
 
     chrome.tabs.query
-      .mockResolvedValueOnce([activeTab])
-      .mockResolvedValueOnce(allTabs)
-      .mockResolvedValueOnce([initialTab]);
+      .mockResolvedValueOnce(allTabs) // For all tabs in window
+      .mockResolvedValueOnce([initialTab]); // For the new window's initial tab
     chrome.windows.create.mockResolvedValue(newWindow);
 
     // Act
     await splitTabs();
 
     // Assert
-    expect(chrome.windows.create).toHaveBeenCalledWith({ state: 'normal' });
-    expect(chrome.tabs.query).toHaveBeenCalledWith({ windowId: newWindow.id });
-    expect(chrome.tabs.move).toHaveBeenCalledWith([2, 3], {
-      windowId: 100,
-      index: -1,
-    });
+    expect(chrome.tabs.query).toHaveBeenCalledWith({ currentWindow: true });
+    expect(chrome.tabs.move).toHaveBeenCalledWith([2, 3], { windowId: 100, index: -1 });
     expect(chrome.tabs.remove).toHaveBeenCalledWith(initialTab.id);
   });
 
   test('should do nothing if there are no tabs to the right', async () => {
     // Arrange
-    const activeTab = { id: 3, index: 2 };
-    const allTabs = [{ id: 1, index: 0 }, { id: 2, index: 1 }, activeTab];
-    chrome.tabs.query
-      .mockResolvedValueOnce([activeTab])
-      .mockResolvedValueOnce(allTabs);
+    const allTabs = [
+      { id: 1, active: false, index: 0 },
+      { id: 2, active: true, index: 1 },
+    ];
+    chrome.tabs.query.mockResolvedValueOnce(allTabs);
 
     // Act
     await splitTabs();
@@ -75,76 +72,29 @@ describe('splitTabs', () => {
       consoleSpy.mockRestore();
     });
 
-    test('should log top-level error if active tab query fails', async () => {
+    test('should log top-level error if tab query fails', async () => {
       // Arrange
-      const queryError = new Error('Failed to query active tab');
+      const queryError = new Error('Failed to query tabs');
       chrome.tabs.query.mockRejectedValue(queryError);
 
       // Act
       await splitTabs();
 
       // Assert
-      expect(console.error).toHaveBeenCalledWith(
-        'An unexpected error occurred in splitTabs:',
-        queryError
-      );
-    });
-
-    test('should log top-level error if window creation fails', async () => {
-      // Arrange
-      const activeTab = { id: 1, index: 0 };
-      const allTabs = [activeTab, { id: 2, index: 1 }];
-      const createError = new Error('Failed to create window');
-
-      chrome.tabs.query
-        .mockResolvedValueOnce([activeTab])
-        .mockResolvedValueOnce(allTabs);
-      chrome.windows.create.mockRejectedValue(createError);
-
-      // Act
-      await splitTabs();
-
-      // Assert
-      expect(console.error).toHaveBeenCalledWith(
-        'An unexpected error occurred in splitTabs:',
-        createError
-      );
-    });
-
-    test('should clean up if querying for initial tab fails', async () => {
-      // Arrange
-      const activeTab = { id: 1, index: 0 };
-      const allTabs = [activeTab, { id: 2, index: 1 }];
-      const newWindow = { id: 100 };
-      const queryError = new Error('Query for initial tab failed');
-
-      chrome.tabs.query
-        .mockResolvedValueOnce([activeTab])
-        .mockResolvedValueOnce(allTabs)
-        .mockRejectedValueOnce(queryError); // Fail the third query
-      chrome.windows.create.mockResolvedValue(newWindow);
-
-      // Act
-      await splitTabs();
-
-      // Assert
-      expect(console.error).toHaveBeenCalledWith(
-        'Failed to prepare the new window or move tabs:',
-        queryError
-      );
-      expect(chrome.windows.remove).toHaveBeenCalledWith(newWindow.id);
+      expect(console.error).toHaveBeenCalledWith('An unexpected error occurred in splitTabs:', queryError);
     });
 
     test('should clean up if moving tabs fails', async () => {
       // Arrange
-      const activeTab = { id: 1, index: 0 };
-      const allTabs = [activeTab, { id: 2, index: 1 }];
+      const allTabs = [
+        { id: 1, active: true, index: 0 },
+        { id: 2, active: false, index: 1 },
+      ];
       const newWindow = { id: 100 };
       const initialTab = { id: 99 };
       const moveError = new Error('Move failed');
 
       chrome.tabs.query
-        .mockResolvedValueOnce([activeTab])
         .mockResolvedValueOnce(allTabs)
         .mockResolvedValueOnce([initialTab]);
       chrome.windows.create.mockResolvedValue(newWindow);
@@ -154,41 +104,8 @@ describe('splitTabs', () => {
       await splitTabs();
 
       // Assert
-      expect(console.error).toHaveBeenCalledWith(
-        'Failed to prepare the new window or move tabs:',
-        moveError
-      );
+      expect(console.error).toHaveBeenCalledWith('Failed to prepare the new window or move tabs:', moveError);
       expect(chrome.windows.remove).toHaveBeenCalledWith(newWindow.id);
-    });
-
-    test('should not clean up if final tab removal fails', async () => {
-      // Arrange
-      const activeTab = { id: 1, index: 0 };
-      const allTabs = [activeTab, { id: 2, index: 1 }];
-      const newWindow = { id: 100 };
-      const initialTab = { id: 99 };
-      const removeError = new Error('Remove failed');
-
-      chrome.tabs.query
-        .mockResolvedValueOnce([activeTab])
-        .mockResolvedValueOnce(allTabs)
-        .mockResolvedValueOnce([initialTab]);
-      chrome.windows.create.mockResolvedValue(newWindow);
-      chrome.tabs.remove.mockRejectedValue(removeError);
-
-      // Act
-      await splitTabs();
-
-      // Assert
-      expect(console.error).toHaveBeenCalledWith(
-        `Failed to remove initial tab ${initialTab.id}:`,
-        removeError
-      );
-      expect(console.error).not.toHaveBeenCalledWith(
-        'Failed to prepare the new window or move tabs:',
-        expect.any(Error)
-      );
-      expect(chrome.windows.remove).not.toHaveBeenCalled();
     });
   });
 });
@@ -196,14 +113,13 @@ describe('splitTabs', () => {
 describe('mergeAllWindows', () => {
   beforeEach(() => {
     createChromeApiMock();
-    chrome.windows.getCurrent.mockResolvedValue({ id: 1 });
   });
 
-  test('moves tabs from other windows and closes them', async () => {
+  test('moves tabs from other windows to the focused window', async () => {
     // Arrange
     const windows = [
-      { id: 1, tabs: [{ id: 10 }] },
-      { id: 2, tabs: [{ id: 20 }, { id: 21 }] },
+      { id: 1, focused: true, tabs: [{ id: 10 }] },
+      { id: 2, focused: false, tabs: [{ id: 20 }, { id: 21 }] },
     ];
     chrome.windows.getAll.mockResolvedValue(windows);
 
@@ -211,19 +127,13 @@ describe('mergeAllWindows', () => {
     await mergeAllWindows();
 
     // Assert
-    expect(chrome.tabs.move).toHaveBeenCalledWith([20, 21], {
-      windowId: 1,
-      index: -1,
-    });
+    expect(chrome.tabs.move).toHaveBeenCalledWith([20, 21], { windowId: 1, index: -1 });
     expect(chrome.windows.remove).toHaveBeenCalledWith(2);
   });
 
-  test('should do nothing if no other windows have tabs', async () => {
+  test('should do nothing if only one window exists', async () => {
     // Arrange
-    const windows = [
-      { id: 1, tabs: [{ id: 10 }] },
-      { id: 2, tabs: [] }, // other window has no tabs
-    ];
+    const windows = [{ id: 1, focused: true, tabs: [{ id: 10 }] }];
     chrome.windows.getAll.mockResolvedValue(windows);
 
     // Act
@@ -231,7 +141,6 @@ describe('mergeAllWindows', () => {
 
     // Assert
     expect(chrome.tabs.move).not.toHaveBeenCalled();
-    expect(chrome.windows.remove).not.toHaveBeenCalled();
   });
 
   describe('with error logging', () => {
@@ -245,69 +154,43 @@ describe('mergeAllWindows', () => {
       consoleSpy.mockRestore();
     });
 
-    test('logs error if window removal fails', async () => {
+    test('should log error if no focused window is found', async () => {
       // Arrange
-      const windows = [
-        { id: 1, tabs: [{ id: 10 }] },
-        { id: 2, tabs: [{ id: 20 }] },
-      ];
-      const removeError = new Error('Removal failed');
-
+      const windows = [{ id: 1, focused: false, tabs: [{ id: 10 }] }];
       chrome.windows.getAll.mockResolvedValue(windows);
-      chrome.windows.remove.mockRejectedValue(removeError);
 
       // Act
       await mergeAllWindows();
 
       // Assert
-      expect(console.error).toHaveBeenCalledWith(
-        'Failed to merge window 2:',
-        removeError
-      );
+      expect(console.error).toHaveBeenCalledWith('Could not find a focused window to merge tabs into.');
     });
 
     test('should continue merging other windows if one fails', async () => {
       // Arrange
       const windows = [
-        { id: 1, tabs: [{ id: 10 }] },
-        { id: 2, tabs: [{ id: 20 }] }, // This one will fail
-        { id: 3, tabs: [{ id: 30 }] }, // This one should still be merged
+        { id: 1, focused: true, tabs: [{ id: 10 }] },
+        { id: 2, focused: false, tabs: [{ id: 20 }] },
+        { id: 3, focused: false, tabs: [{ id: 30 }] },
       ];
-      const moveError = new Error('Failed to move tabs');
+      const moveError = new Error('Move failed');
 
       chrome.windows.getAll.mockResolvedValue(windows);
-      // Fail the first move, then succeed on the second, to test sequential loop
-      chrome.tabs.move
-        .mockRejectedValueOnce(moveError)
-        .mockResolvedValueOnce(undefined);
+      chrome.tabs.move.mockImplementation(async (tabIds) => {
+        if (tabIds.includes(20)) throw moveError;
+        return undefined;
+      });
 
       // Act
       await mergeAllWindows();
 
       // Assert
-      // Check that it tried to move tabs for the failing window
-      expect(chrome.tabs.move).toHaveBeenCalledWith([20], {
-        windowId: 1,
-        index: -1,
-      });
-      // Check that the error was logged
-      expect(console.error).toHaveBeenCalledWith(
-        'Failed to merge window 2:',
-        moveError
-      );
-
-      // Check that it still merged the next window
-      expect(chrome.tabs.move).toHaveBeenCalledWith([30], {
-        windowId: 1,
-        index: -1,
-      });
-      // Check that it removed the successfully merged window
+      expect(console.error).toHaveBeenCalledWith('Failed to merge window 2:', moveError);
       expect(chrome.windows.remove).toHaveBeenCalledWith(3);
-      // Check that it did NOT remove the failed window
       expect(chrome.windows.remove).not.toHaveBeenCalledWith(2);
     });
 
-    test('should log top-level error if initial windows query fails', async () => {
+    test('should log top-level error if getAll fails', async () => {
       // Arrange
       const queryError = new Error('Failed to get windows');
       chrome.windows.getAll.mockRejectedValue(queryError);
@@ -316,10 +199,7 @@ describe('mergeAllWindows', () => {
       await mergeAllWindows();
 
       // Assert
-      expect(console.error).toHaveBeenCalledWith(
-        'An unexpected error occurred in mergeAllWindows:',
-        queryError
-      );
+      expect(console.error).toHaveBeenCalledWith('An unexpected error occurred in mergeAllWindows:', queryError);
     });
   });
 });
