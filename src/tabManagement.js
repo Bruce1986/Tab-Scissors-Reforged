@@ -3,24 +3,60 @@
  * @returns {Promise<void>}
  */
 export async function splitTabs() {
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!activeTab) return;
+  try {
+    const allTabsInWindow = await chrome.tabs.query({ currentWindow: true });
+    const activeTab = allTabsInWindow.find((t) => t.active);
+    if (!activeTab) return;
 
-  const allTabsInWindow = await chrome.tabs.query({ currentWindow: true });
-  // Sort tabs by index to ensure correct order
-  allTabsInWindow.sort((a, b) => a.index - b.index);
-  
-  const activeIndex = allTabsInWindow.findIndex(t => t.id === activeTab.id);
-  const tabsToMove = allTabsInWindow.slice(activeIndex + 1);
+    const activeIndex = allTabsInWindow.findIndex((t) => t.id === activeTab.id);
+    const tabsToMove = allTabsInWindow.slice(activeIndex + 1);
 
-  if (tabsToMove.length === 0) return;
+    if (tabsToMove.length === 0) return;
 
-  const tabIdsToMove = tabsToMove.map(t => t.id);
+    const tabIdsToMove = tabsToMove.map((t) => t.id);
 
-  // 建立一個新視窗，並直接將所有目標分頁移入
-  const newWindow = await chrome.windows.create({ tabId: tabIdsToMove[0] });
-  if (tabIdsToMove.length > 1) {
-    await chrome.tabs.move(tabIdsToMove.slice(1), { windowId: newWindow.id, index: -1 });
+    const newWindow = await chrome.windows.create({ state: 'normal' });
+
+    // All operations after window creation are wrapped in a try/catch
+    // to ensure the new window is cleaned up on any failure.
+    try {
+      // Get the initial tab that comes with the new window.
+      const [initialTab] = await chrome.tabs.query({ windowId: newWindow.id });
+
+      // If the new window is unexpectedly empty, throw to trigger cleanup.
+      if (!initialTab) {
+        throw new Error(
+          `Newly created window ${newWindow.id} has no initial tab.`
+        );
+      }
+
+      // Move the desired tabs to the new window.
+      await chrome.tabs.move(tabIdsToMove, {
+        windowId: newWindow.id,
+        index: -1,
+      });
+
+      // If removing the initial tab fails, we don't want to close the new window,
+      // so it has its own separate try/catch.
+      try {
+        await chrome.tabs.remove(initialTab.id);
+      } catch (error) {
+        console.error(`Failed to remove initial tab ${initialTab.id}:`, error);
+      }
+    } catch (error) {
+      console.error('Failed to prepare the new window or move tabs:', error);
+      // Clean up the new window if any step in the process fails.
+      try {
+        await chrome.windows.remove(newWindow.id);
+      } catch (cleanupError) {
+        console.error(
+          `Failed to clean up window ${newWindow.id} after an error:`,
+          cleanupError
+        );
+      }
+    }
+  } catch (error) {
+    console.error('An unexpected error occurred in splitTabs:', error);
   }
 }
 
@@ -29,30 +65,38 @@ export async function splitTabs() {
  * @returns {Promise<void>}
  */
 export async function mergeAllWindows() {
-  // 取得除了當前視窗以外的所有視窗
-  const currentWindow = await chrome.windows.getCurrent();
-  const windows = await chrome.windows.getAll({ populate: true });
+  try {
+    // Get all windows and find the currently focused one.
+    const windows = await chrome.windows.getAll({ populate: true });
+    const currentWindow = windows.find((w) => w.focused);
 
-  if (windows.length < 2) return;
-
-  // 遍歷所有視窗
-  for (const win of windows) {
-    // 如果是當前視窗，就跳過
-    if (win.id === currentWindow.id) continue;
-    // 如果視窗沒有分頁，也跳過
-    if (!win.tabs || win.tabs.length === 0) continue;
-
-    // 將其他視窗的所有分頁ID收集起來
-    const tabIds = win.tabs.map(t => t.id);
-    // 將這些分頁移至當前視窗的最後
-    await chrome.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
-
-    // 移除原來的視窗，若失敗則記錄錯誤
-    try {
-      await chrome.windows.remove(win.id);
-    } catch (error) {
-      console.error(`Failed to remove window ${win.id}:`, error);
+    // If no window is focused, we cannot merge.
+    if (!currentWindow) {
+      console.error('Could not find a focused window to merge tabs into.');
+      return;
     }
-  }
 
+    // Filter for other windows that have tabs to merge.
+    const windowsToMerge = windows.filter(
+      (win) => win.id !== currentWindow.id && win.tabs && win.tabs.length > 0
+    );
+
+    if (windowsToMerge.length === 0) return;
+
+    // Process all merge operations sequentially to ensure deterministic tab order.
+    for (const win of windowsToMerge) {
+      try {
+        const tabIds = win.tabs.map((t) => t.id);
+        await chrome.tabs.move(tabIds, {
+          windowId: currentWindow.id,
+          index: -1,
+        });
+        await chrome.windows.remove(win.id);
+      } catch (error) {
+        console.error(`Failed to merge window ${win.id}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('An unexpected error occurred in mergeAllWindows:', error);
+  }
 }
