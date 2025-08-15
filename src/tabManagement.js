@@ -11,7 +11,6 @@ export async function splitTabs() {
     if (!activeTab) return;
 
     const allTabsInWindow = await chrome.tabs.query({ currentWindow: true });
-    allTabsInWindow.sort((a, b) => a.index - b.index);
 
     const activeIndex = allTabsInWindow.findIndex((t) => t.id === activeTab.id);
     const tabsToMove = allTabsInWindow.slice(activeIndex + 1);
@@ -82,21 +81,19 @@ export async function mergeAllWindows() {
 
     if (windowsToMerge.length === 0) return;
 
-    // Process all merge operations in parallel for better performance.
-    await Promise.all(
-      windowsToMerge.map(async (win) => {
-        try {
-          const tabIds = win.tabs.map((t) => t.id);
-          await chrome.tabs.move(tabIds, {
-            windowId: currentWindow.id,
-            index: -1,
-          });
-          await chrome.windows.remove(win.id);
-        } catch (error) {
-          console.error(`Failed to merge window ${win.id}:`, error);
-        }
-      })
-    );
+    // Process all merge operations sequentially to ensure deterministic tab order.
+    for (const win of windowsToMerge) {
+      try {
+        const tabIds = win.tabs.map((t) => t.id);
+        await chrome.tabs.move(tabIds, {
+          windowId: currentWindow.id,
+          index: -1,
+        });
+        await chrome.windows.remove(win.id);
+      } catch (error) {
+        console.error(`Failed to merge window ${win.id}:`, error);
+      }
+    }
   } catch (error) {
     console.error('An unexpected error occurred in mergeAllWindows:', error);
   }

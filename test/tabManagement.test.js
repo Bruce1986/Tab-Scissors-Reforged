@@ -276,31 +276,34 @@ describe('mergeAllWindows', () => {
       const moveError = new Error('Failed to move tabs');
 
       chrome.windows.getAll.mockResolvedValue(windows);
-      // Mock 'move' to fail for a specific set of tabs.
-      chrome.tabs.move.mockImplementation(async (tabIds) => {
-        if (tabIds.includes(20)) {
-          throw moveError;
-        }
-        return undefined;
-      });
+      // Fail the first move, then succeed on the second, to test sequential loop
+      chrome.tabs.move
+        .mockRejectedValueOnce(moveError)
+        .mockResolvedValueOnce(undefined);
 
       // Act
       await mergeAllWindows();
 
       // Assert
+      // Check that it tried to move tabs for the failing window
       expect(chrome.tabs.move).toHaveBeenCalledWith([20], {
         windowId: 1,
         index: -1,
       });
+      // Check that the error was logged
       expect(console.error).toHaveBeenCalledWith(
         'Failed to merge window 2:',
         moveError
       );
+
+      // Check that it still merged the next window
       expect(chrome.tabs.move).toHaveBeenCalledWith([30], {
         windowId: 1,
         index: -1,
       });
+      // Check that it removed the successfully merged window
       expect(chrome.windows.remove).toHaveBeenCalledWith(3);
+      // Check that it did NOT remove the failed window
       expect(chrome.windows.remove).not.toHaveBeenCalledWith(2);
     });
 
