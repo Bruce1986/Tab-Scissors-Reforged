@@ -47,6 +47,13 @@ export async function mergeAllWindows(targetWindowId) {
     const tabIds = win.tabs.map(t => t.id);
     // 將這些分頁移至目標視窗的最後
     await chrome.tabs.move(tabIds, { windowId: targetWindowId, index: -1 });
+
+    // 移除原來的視窗，若失敗則記錄錯誤
+    try {
+      await chrome.windows.remove(win.id);
+    } catch (error) {
+      console.error(`Failed to remove window ${win.id}:`, error);
+    }
   }
 
 }
