@@ -11,6 +11,10 @@ export async function handleCommand(command) {
 }
 
 export function handleMessage(message, _sender, _sendResponse) {
+  if (!message || typeof message !== 'object' || typeof message.action !== 'string') {
+    return;
+  }
+
   if (message.action === 'split') {
     splitTabs(message.windowId);
   } else if (message.action === 'merge') {

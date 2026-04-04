@@ -60,4 +60,12 @@ describe('handleMessage', () => {
     expect(splitTabs).not.toHaveBeenCalled();
     expect(mergeAllWindows).not.toHaveBeenCalled();
   });
+
+  test('does not throw on malformed message payload', () => {
+    expect(() => handleMessage(null, {}, jest.fn())).not.toThrow();
+    expect(() => handleMessage(undefined, {}, jest.fn())).not.toThrow();
+    expect(() => handleMessage('split', {}, jest.fn())).not.toThrow();
+    expect(splitTabs).not.toHaveBeenCalled();
+    expect(mergeAllWindows).not.toHaveBeenCalled();
+  });
 });

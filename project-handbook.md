@@ -104,6 +104,11 @@
 - ✅ 新增 extension icons 與 manifest 驗證測試
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/04）
+- ✅ 依 CodeRabbit 建議補上 `sendMessage` await、防 malformed message、防止 split 搬走 active tab
+- ✅ 補齊 malformed message 與 split 邊界情境測試
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

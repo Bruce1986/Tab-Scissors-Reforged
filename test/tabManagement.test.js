@@ -30,10 +30,34 @@ describe('splitTabs', () => {
 
     await splitTabs(windowId);
 
-    // Expect the first tab to be moved to the new window (since we split FROM the current tab)
-    expect(chrome.windows.create).toHaveBeenCalledWith({ tabId: 1 });
-    // Expect the remaining tabs to be moved
-    expect(chrome.tabs.move).toHaveBeenCalledWith([2, 3], { windowId: 100, index: -1 });
+    expect(chrome.windows.create).toHaveBeenCalledWith({ tabId: 2 });
+    expect(chrome.tabs.move).toHaveBeenCalledWith([3], { windowId: 100, index: -1 });
+  });
+
+  test('does nothing when the active tab is last', async () => {
+    const activeTab = { id: 3 };
+    const tabs = [{ id: 1 }, { id: 2 }, activeTab];
+
+    chrome.tabs.query.mockResolvedValueOnce([activeTab]);
+    chrome.tabs.query.mockResolvedValueOnce(tabs);
+
+    await splitTabs(999);
+
+    expect(chrome.windows.create).not.toHaveBeenCalled();
+    expect(chrome.tabs.move).not.toHaveBeenCalled();
+  });
+
+  test('does nothing when the active tab is missing from the tab list', async () => {
+    const activeTab = { id: 99 };
+    const tabs = [{ id: 1 }, { id: 2 }, { id: 3 }];
+
+    chrome.tabs.query.mockResolvedValueOnce([activeTab]);
+    chrome.tabs.query.mockResolvedValueOnce(tabs);
+
+    await splitTabs(999);
+
+    expect(chrome.windows.create).not.toHaveBeenCalled();
+    expect(chrome.tabs.move).not.toHaveBeenCalled();
   });
 });
 

@@ -13,7 +13,9 @@ export async function splitTabs(windowId) {
     allTabsInWindow.sort((a, b) => a.index - b.index);
 
     const activeIndex = allTabsInWindow.findIndex(t => t.id === activeTab.id);
-    const tabsToMove = allTabsInWindow.slice(activeIndex);
+    if (activeIndex < 0) return;
+
+    const tabsToMove = allTabsInWindow.slice(activeIndex + 1);
 
     if (tabsToMove.length === 0) return;
 
