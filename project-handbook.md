@@ -102,11 +102,9 @@
 ### 🤖 AI Assistant 日誌（2026/04/04）
 - ✅ 修復 popup 與 service worker 訊息串接、補上 popup 防呆與錯誤處理
 - ✅ 新增 extension icons 與 manifest 驗證測試
-- ✅ 自我測試：`npm test` 全數通過
-
-### 🤖 AI Assistant 日誌（2026/04/04）
 - ✅ 依 CodeRabbit 建議補上 `sendMessage` await、防 malformed message、防止 split 搬走 active tab
 - ✅ 補齊 malformed message 與 split 邊界情境測試
+- ✅ 依 CodeRabbit 建議補上 `windowId` 驗證，避免 message 導致跨視窗誤查詢
 - ✅ 自我測試：`npm test` 全數通過
 
 ---

@@ -15,6 +15,11 @@ export function handleMessage(message, _sender, _sendResponse) {
     return;
   }
 
+  if (!Number.isInteger(message.windowId)) {
+    console.warn('[Tab Scissors] Invalid or missing windowId in message.');
+    return;
+  }
+
   if (message.action === 'split') {
     splitTabs(message.windowId);
   } else if (message.action === 'merge') {
