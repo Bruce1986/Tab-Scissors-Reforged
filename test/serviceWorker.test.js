@@ -56,9 +56,15 @@ describe('handleMessage', () => {
   });
 
   test('ignores unknown action', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
+
     handleMessage({ action: 'unknown', windowId: 100 }, {}, jest.fn());
+
     expect(splitTabs).not.toHaveBeenCalled();
     expect(mergeAllWindows).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith('[Tab Scissors] Unsupported action: unknown');
+
+    warnSpy.mockRestore();
   });
 
   test('does not throw on malformed message payload', () => {

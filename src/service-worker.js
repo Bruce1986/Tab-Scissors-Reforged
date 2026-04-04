@@ -24,6 +24,8 @@ export function handleMessage(message, _sender, _sendResponse) {
     splitTabs(message.windowId);
   } else if (message.action === 'merge') {
     mergeAllWindows(message.windowId);
+  } else {
+    console.warn(`[Tab Scissors] Unsupported action: ${message.action}`);
   }
 }
 
