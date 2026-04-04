@@ -99,6 +99,11 @@
 - ✅ 加入 null 訊息測試並修正 handleMessage
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/04）
+- ✅ 修復 popup 與 service worker 訊息串接、補上 popup 防呆與錯誤處理
+- ✅ 新增 extension icons 與 manifest 驗證測試
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

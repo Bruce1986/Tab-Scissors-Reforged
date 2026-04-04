@@ -10,28 +10,12 @@ jest.unstable_mockModule('../src/tabManagement.js', () => ({
 
 // Mock chrome global
 global.chrome = {
-  action: { onClicked: { addListener: jest.fn() } },
+  runtime: { onMessage: { addListener: jest.fn() } },
   commands: { onCommand: { addListener: jest.fn() } },
   windows: { getCurrent: jest.fn() }
 };
 
-const { handleActionClick, handleCommand } = await import('../src/service-worker.js');
-
-describe('handleActionClick', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('calls splitTabs with windowId', () => {
-    handleActionClick({ windowId: 123 });
-    expect(splitTabs).toHaveBeenCalledWith(123);
-  });
-
-  test('does nothing if windowId is missing', () => {
-    handleActionClick({});
-    expect(splitTabs).not.toHaveBeenCalled();
-  });
-});
+const { handleCommand, handleMessage } = await import('../src/service-worker.js');
 
 describe('handleCommand', () => {
   beforeEach(() => {
@@ -51,6 +35,28 @@ describe('handleCommand', () => {
 
   test('ignores unknown command', async () => {
     await handleCommand('unknown');
+    expect(splitTabs).not.toHaveBeenCalled();
+    expect(mergeAllWindows).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleMessage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('calls splitTabs when action is split', () => {
+    handleMessage({ action: 'split', windowId: 123 }, {}, jest.fn());
+    expect(splitTabs).toHaveBeenCalledWith(123);
+  });
+
+  test('calls mergeAllWindows when action is merge', () => {
+    handleMessage({ action: 'merge', windowId: 789 }, {}, jest.fn());
+    expect(mergeAllWindows).toHaveBeenCalledWith(789);
+  });
+
+  test('ignores unknown action', () => {
+    handleMessage({ action: 'unknown', windowId: 100 }, {}, jest.fn());
     expect(splitTabs).not.toHaveBeenCalled();
     expect(mergeAllWindows).not.toHaveBeenCalled();
   });
