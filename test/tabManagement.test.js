@@ -9,8 +9,7 @@ global.chrome = {
   windows: {
     create: jest.fn(),
     getCurrent: jest.fn(),
-    getAll: jest.fn(),
-    remove: jest.fn()
+    getAll: jest.fn()
   }
 };
 
@@ -66,7 +65,7 @@ describe('mergeAllWindows', () => {
     jest.resetAllMocks();
   });
 
-  test('moves tabs from other windows and closes them', async () => {
+  test('moves tabs from other windows into the target window', async () => {
     const targetWindowId = 1;
     chrome.windows.getAll.mockResolvedValue([
       { id: 1, tabs: [{ id: 10 }] },
@@ -76,22 +75,18 @@ describe('mergeAllWindows', () => {
     await mergeAllWindows(targetWindowId);
 
     expect(chrome.tabs.move).toHaveBeenCalledWith([20, 21], { windowId: targetWindowId, index: -1 });
-    expect(chrome.windows.remove).toHaveBeenCalledWith(2);
   });
 
-  test('logs error if window removal fails', async () => {
+  test('skips windows that have no tabs', async () => {
     const targetWindowId = 1;
-    const error = new Error('Removal failed');
     chrome.windows.getAll.mockResolvedValue([
       { id: 1, tabs: [{ id: 10 }] },
-      { id: 2, tabs: [{ id: 20 }] }
+      { id: 2, tabs: [] },
+      { id: 3 }
     ]);
-    chrome.windows.remove.mockRejectedValue(error);
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
     await mergeAllWindows(targetWindowId);
 
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to remove window 2:', error);
-    consoleSpy.mockRestore();
+    expect(chrome.tabs.move).not.toHaveBeenCalled();
   });
 });
