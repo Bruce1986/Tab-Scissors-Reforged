@@ -152,6 +152,11 @@
 - ✅ 將 action pending 保護移到 service worker，讓 popup 關閉重開後仍能阻擋重複操作
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 將 service worker lock 收斂為每視窗一把鎖，避免 split/merge 在同一視窗交錯競爭
+- ✅ 補上測試，驗證同一視窗的不同 action 也會被統一阻擋直到前一個操作完成
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

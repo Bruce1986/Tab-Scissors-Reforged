@@ -34,9 +34,9 @@ export function handleMessage(message, _sender, sendResponse) {
     return;
   }
 
-  const pendingKey = `${message.action}:${message.windowId}`;
+  const pendingKey = `window:${message.windowId}`;
   if (pendingActions.has(pendingKey)) {
-    sendResponse?.({ status: 'error', message: `${message.action} action already in progress.` });
+    sendResponse?.({ status: 'error', message: 'An action is already in progress for this window.' });
     return;
   }
 

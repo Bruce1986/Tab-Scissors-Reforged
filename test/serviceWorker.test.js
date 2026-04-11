@@ -116,7 +116,7 @@ describe('handleMessage', () => {
     expect(firstResult).toBe(true);
     expect(secondResult).toBeUndefined();
     expect(splitTabs).toHaveBeenCalledTimes(1);
-    expect(secondResponse).toHaveBeenCalledWith({ status: 'error', message: 'split action already in progress.' });
+    expect(secondResponse).toHaveBeenCalledWith({ status: 'error', message: 'An action is already in progress for this window.' });
 
     resolveSplit();
     await Promise.resolve();
@@ -127,6 +127,25 @@ describe('handleMessage', () => {
     const thirdResult = handleMessage({ action: 'split', windowId: 123 }, {}, thirdResponse);
 
     expect(thirdResult).toBe(true);
+  });
+
+  test('rejects a different action while the same window is still locked', async () => {
+    let resolveSplit;
+    const pendingSplit = new Promise(resolve => {
+      resolveSplit = resolve;
+    });
+    const firstResponse = jest.fn();
+    const secondResponse = jest.fn();
+    splitTabs.mockReturnValue(pendingSplit);
+
+    handleMessage({ action: 'split', windowId: 123 }, {}, firstResponse);
+    const secondResult = handleMessage({ action: 'merge', windowId: 123 }, {}, secondResponse);
+
+    expect(secondResult).toBeUndefined();
+    expect(mergeAllWindows).not.toHaveBeenCalled();
+    expect(secondResponse).toHaveBeenCalledWith({ status: 'error', message: 'An action is already in progress for this window.' });
+
+    resolveSplit();
   });
 
   test('ignores unknown action', () => {
