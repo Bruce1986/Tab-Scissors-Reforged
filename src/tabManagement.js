@@ -4,24 +4,36 @@
  * @returns {Promise<void>}
  */
 export async function splitTabs(windowId) {
-  const [activeTab] = await chrome.tabs.query({ active: true, windowId });
-  if (!activeTab) return;
+  try {
+    const [activeTab] = await chrome.tabs.query({ active: true, windowId });
+    if (!activeTab) return;
 
-  const allTabsInWindow = await chrome.tabs.query({ windowId });
-  // Sort tabs by index to ensure correct order
-  allTabsInWindow.sort((a, b) => a.index - b.index);
+    const allTabsInWindow = await chrome.tabs.query({ windowId });
+    // Sort tabs by index to ensure correct order
+    allTabsInWindow.sort((a, b) => a.index - b.index);
 
-  const activeIndex = allTabsInWindow.findIndex(t => t.id === activeTab.id);
-  const tabsToMove = allTabsInWindow.slice(activeIndex);
+    const activeIndex = allTabsInWindow.findIndex(t => t.id === activeTab.id);
+    if (activeIndex < 0) {
+      throw new Error('Active tab not found in the current window.');
+    }
 
-  if (tabsToMove.length === 0) return;
+    const tabsToMove = allTabsInWindow.slice(activeIndex + 1);
 
-  const tabIdsToMove = tabsToMove.map(t => t.id);
+    if (tabsToMove.length === 0) return;
 
-  // 建立一個新視窗，並直接將所有目標分頁移入
-  const newWindow = await chrome.windows.create({ tabId: tabIdsToMove[0] });
-  if (tabIdsToMove.length > 1) {
-    await chrome.tabs.move(tabIdsToMove.slice(1), { windowId: newWindow.id, index: -1 });
+    const tabIdsToMove = tabsToMove.map(t => t.id);
+
+    // 建立一個新視窗，並直接將所有目標分頁移入
+    const newWindow = await chrome.windows.create({
+      tabId: tabIdsToMove[0],
+      incognito: activeTab.incognito
+    });
+    if (tabIdsToMove.length > 1) {
+      await chrome.tabs.move(tabIdsToMove.slice(1), { windowId: newWindow.id, index: -1 });
+    }
+  } catch (error) {
+    console.error('splitTabs failed:', error);
+    throw error;
   }
 }
 
@@ -31,29 +43,35 @@ export async function splitTabs(windowId) {
  * @returns {Promise<void>}
  */
 export async function mergeAllWindows(targetWindowId) {
-  // 取得所有視窗
-  const windows = await chrome.windows.getAll({ populate: true });
+  try {
+    // 取得所有視窗
+    const windows = await chrome.windows.getAll({ populate: true });
 
-  if (windows.length < 2) return;
+    if (windows.length < 2) return;
 
-  // 遍歷所有視窗
-  for (const win of windows) {
-    // 如果是目標視窗，就跳過
-    if (win.id === targetWindowId) continue;
-    // 如果視窗沒有分頁，也跳過
-    if (!win.tabs || win.tabs.length === 0) continue;
-
-    // 將其他視窗的所有分頁ID收集起來
-    const tabIds = win.tabs.map(t => t.id);
-    // 將這些分頁移至目標視窗的最後
-    await chrome.tabs.move(tabIds, { windowId: targetWindowId, index: -1 });
-
-    // 移除原來的視窗，若失敗則記錄錯誤
-    try {
-      await chrome.windows.remove(win.id);
-    } catch (error) {
-      console.error(`Failed to remove window ${win.id}:`, error);
+    const targetWindow = windows.find(win => win.id === targetWindowId);
+    if (!targetWindow) {
+      throw new Error('Target window not found.');
     }
-  }
 
+    // 遍歷所有視窗
+    for (const win of windows) {
+      // 如果是目標視窗或隱私模式不同，就跳過
+      if (win.id === targetWindowId || win.incognito !== targetWindow?.incognito) continue;
+      // 如果視窗沒有分頁，也跳過
+      if (!win.tabs || win.tabs.length === 0) continue;
+
+      // 將其他視窗的所有分頁ID收集起來
+      const tabIds = win.tabs.map(t => t.id);
+      try {
+        // 將這些分頁移至目標視窗的最後
+        await chrome.tabs.move(tabIds, { windowId: targetWindowId, index: -1 });
+      } catch (error) {
+        console.error(`Failed to move tabs from window ${win.id}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('mergeAllWindows failed:', error);
+    throw error;
+  }
 }

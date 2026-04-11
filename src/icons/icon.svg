@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Tab Scissors Reforged icon">
+  <defs>
+    <linearGradient id="bg" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="108" height="108" rx="28" fill="url(#bg)"/>
+  <path d="M34 38h60a8 8 0 0 1 8 8v12H26V46a8 8 0 0 1 8-8Z" fill="#ecfeff" opacity="0.95"/>
+  <path d="M26 60h76v22a8 8 0 0 1-8 8H34a8 8 0 0 1-8-8V60Z" fill="#ccfbf1"/>
+  <circle cx="40" cy="49" r="4" fill="#0f766e"/>
+  <circle cx="52" cy="49" r="4" fill="#0f766e"/>
+  <circle cx="44" cy="91" r="12" fill="#f8fafc"/>
+  <circle cx="84" cy="91" r="12" fill="#f8fafc"/>
+  <path d="M50 85l26-36" stroke="#134e4a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M57 95l14-20" stroke="#134e4a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M74 95l14-20" stroke="#134e4a" stroke-width="8" stroke-linecap="round"/>
+</svg>
