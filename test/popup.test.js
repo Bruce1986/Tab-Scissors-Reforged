@@ -24,6 +24,10 @@ async function importPopupModule() {
   const mergeButton = createButton(handler => {
     mergeHandler = handler;
   });
+  const statusElement = {
+    textContent: '',
+    dataset: {}
+  };
 
   global.document = {
     getElementById: jest.fn(id => {
@@ -33,6 +37,10 @@ async function importPopupModule() {
 
       if (id === 'merge') {
         return mergeButton;
+      }
+
+      if (id === 'status') {
+        return statusElement;
       }
 
       return null;
@@ -46,7 +54,7 @@ async function importPopupModule() {
 
   await import(`../src/popup.js?test=${Date.now()}`);
 
-  return { splitButton, mergeButton };
+  return { splitButton, mergeButton, statusElement };
 }
 
 describe('popup actions', () => {
@@ -81,24 +89,45 @@ describe('popup actions', () => {
 
   test('logs an error when the service worker returns an error response', async () => {
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    await importPopupModule();
+    const { statusElement } = await importPopupModule();
     chrome.runtime.sendMessage.mockResolvedValue({ status: 'error', message: 'Split failed' });
 
     await splitHandler();
 
     expect(errorSpy).toHaveBeenCalledWith('Split action failed:', expect.any(Error));
+    expect(statusElement.textContent).toBe('Split action failed: Split failed');
+    expect(statusElement.dataset.state).toBe('error');
 
     errorSpy.mockRestore();
   });
 
   test('logs an error when the service worker does not reply', async () => {
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    await importPopupModule();
+    const { statusElement } = await importPopupModule();
     chrome.runtime.sendMessage.mockResolvedValue(undefined);
 
     await mergeHandler();
 
     expect(errorSpy).toHaveBeenCalledWith('Merge action failed:', expect.any(Error));
+    expect(statusElement.textContent).toBe('Merge action failed: Merge action failed.');
+    expect(statusElement.dataset.state).toBe('error');
+
+    errorSpy.mockRestore();
+  });
+
+  test('clears any previous error message before retrying an action', async () => {
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const { statusElement } = await importPopupModule();
+    chrome.runtime.sendMessage.mockResolvedValue({ status: 'error', message: 'Split failed' });
+
+    await splitHandler();
+    expect(statusElement.textContent).toBe('Split action failed: Split failed');
+
+    chrome.runtime.sendMessage.mockResolvedValue({ status: 'success' });
+    await mergeHandler();
+
+    expect(statusElement.textContent).toBe('');
+    expect(statusElement.dataset.state).toBe('');
 
     errorSpy.mockRestore();
   });

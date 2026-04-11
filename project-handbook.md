@@ -132,6 +132,11 @@
 - ✅ 修正 `handleMessage` 的 `sendResponse` 參數命名，讓已使用參數與命名慣例一致
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 補上 popup 內可見的錯誤狀態訊息，避免失敗時只有 console log
+- ✅ 補齊 popup 狀態訊息測試，驗證錯誤顯示與重試清空行為
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

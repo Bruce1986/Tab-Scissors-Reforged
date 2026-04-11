@@ -7,11 +7,14 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 10px; }
     button { width: 120px; margin: 5px 0; padding: 5px; }
+    #status { min-height: 1.2em; margin: 8px 0 0; font-size: 12px; }
+    #status[data-state="error"] { color: #b42318; }
   </style>
 </head>
 <body>
   <button id="split">🔪 Split Here</button>
   <button id="merge">🪢 Merge Windows</button>
+  <p id="status" role="status" aria-live="polite"></p>
   <script src="popup.js"></script>
 </body>
 </html>
