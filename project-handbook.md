@@ -137,6 +137,11 @@
 - ✅ 補齊 popup 狀態訊息測試，驗證錯誤顯示與重試清空行為
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 強化錯誤傳播：無效 `windowId` 會回傳明確 error response，找不到 active tab 時會丟錯
+- ✅ 補上 popup 執行中鎖定按鈕，避免連點造成重入與 Chrome API race condition
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

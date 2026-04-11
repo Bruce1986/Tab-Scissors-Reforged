@@ -13,7 +13,9 @@ export async function splitTabs(windowId) {
     allTabsInWindow.sort((a, b) => a.index - b.index);
 
     const activeIndex = allTabsInWindow.findIndex(t => t.id === activeTab.id);
-    if (activeIndex < 0) return;
+    if (activeIndex < 0) {
+      throw new Error('Active tab not found in the current window.');
+    }
 
     const tabsToMove = allTabsInWindow.slice(activeIndex + 1);
 

@@ -46,17 +46,23 @@ describe('splitTabs', () => {
     expect(chrome.tabs.move).not.toHaveBeenCalled();
   });
 
-  test('does nothing when the active tab is missing from the tab list', async () => {
+  test('throws when the active tab is missing from the tab list', async () => {
     const activeTab = { id: 99 };
     const tabs = [{ id: 1 }, { id: 2 }, { id: 3 }];
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    chrome.tabs.query.mockResolvedValueOnce([activeTab]);
-    chrome.tabs.query.mockResolvedValueOnce(tabs);
+    try {
+      chrome.tabs.query.mockResolvedValueOnce([activeTab]);
+      chrome.tabs.query.mockResolvedValueOnce(tabs);
 
-    await splitTabs(999);
+      await expect(splitTabs(999)).rejects.toThrow('Active tab not found in the current window.');
 
-    expect(chrome.windows.create).not.toHaveBeenCalled();
-    expect(chrome.tabs.move).not.toHaveBeenCalled();
+      expect(chrome.windows.create).not.toHaveBeenCalled();
+      expect(chrome.tabs.move).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith('splitTabs failed:', expect.any(Error));
+    } finally {
+      consoleSpy.mockRestore();
+    }
   });
 
   test('rethrows errors after logging when split fails', async () => {

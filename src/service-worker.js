@@ -17,6 +17,7 @@ export function handleMessage(message, _sender, sendResponse) {
 
   if (!Number.isInteger(message.windowId)) {
     console.warn('[Tab Scissors] Invalid or missing windowId in message.');
+    sendResponse?.({ status: 'error', message: 'Invalid or missing windowId' });
     return;
   }
 

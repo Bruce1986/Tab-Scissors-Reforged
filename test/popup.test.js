@@ -4,13 +4,21 @@ let splitHandler;
 let mergeHandler;
 
 function createButton(handlerSetter) {
-  return {
+  const button = {
+    disabled: false,
     addEventListener: jest.fn((eventName, handler) => {
       if (eventName === 'click') {
         handlerSetter(handler);
       }
+    }),
+    toggleAttribute: jest.fn((name, force) => {
+      if (name === 'disabled') {
+        button.disabled = force;
+      }
     })
   };
+
+  return button;
 }
 
 async function importPopupModule() {
@@ -70,12 +78,16 @@ describe('popup actions', () => {
   });
 
   test('sends a split action for the current window', async () => {
-    await importPopupModule();
+    const { splitButton, mergeButton } = await importPopupModule();
 
     await splitHandler();
 
     expect(chrome.windows.getCurrent).toHaveBeenCalled();
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ action: 'split', windowId: 321 });
+    expect(splitButton.toggleAttribute).toHaveBeenNthCalledWith(1, 'disabled', true);
+    expect(mergeButton.toggleAttribute).toHaveBeenNthCalledWith(1, 'disabled', true);
+    expect(splitButton.toggleAttribute).toHaveBeenLastCalledWith('disabled', false);
+    expect(mergeButton.toggleAttribute).toHaveBeenLastCalledWith('disabled', false);
   });
 
   test('sends a merge action for the current window', async () => {
@@ -130,5 +142,30 @@ describe('popup actions', () => {
     expect(statusElement.dataset.state).toBe('');
 
     errorSpy.mockRestore();
+  });
+
+  test('ignores rapid repeated clicks while an action is already running', async () => {
+    let resolveMessage;
+    const pendingMessage = new Promise(resolve => {
+      resolveMessage = resolve;
+    });
+    const { splitButton, mergeButton } = await importPopupModule();
+
+    chrome.runtime.sendMessage.mockReturnValue(pendingMessage);
+
+    const firstCall = splitHandler();
+    const secondCall = splitHandler();
+    await Promise.resolve();
+
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(1);
+    expect(splitButton.toggleAttribute).toHaveBeenNthCalledWith(1, 'disabled', true);
+    expect(mergeButton.toggleAttribute).toHaveBeenNthCalledWith(1, 'disabled', true);
+
+    resolveMessage({ status: 'success' });
+    await firstCall;
+    await secondCall;
+
+    expect(splitButton.toggleAttribute).toHaveBeenLastCalledWith('disabled', false);
+    expect(mergeButton.toggleAttribute).toHaveBeenLastCalledWith('disabled', false);
   });
 });

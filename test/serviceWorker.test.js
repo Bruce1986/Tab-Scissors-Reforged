@@ -123,13 +123,16 @@ describe('handleMessage', () => {
 
   test('ignores messages with invalid windowId', () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
+    const sendResponse = jest.fn();
 
-    handleMessage({ action: 'split' }, {}, jest.fn());
-    handleMessage({ action: 'merge', windowId: '789' }, {}, jest.fn());
+    handleMessage({ action: 'split' }, {}, sendResponse);
+    handleMessage({ action: 'merge', windowId: '789' }, {}, sendResponse);
 
     expect(splitTabs).not.toHaveBeenCalled();
     expect(mergeAllWindows).not.toHaveBeenCalled();
     expect(warnSpy).toHaveBeenCalledWith('[Tab Scissors] Invalid or missing windowId in message.');
+    expect(sendResponse).toHaveBeenNthCalledWith(1, { status: 'error', message: 'Invalid or missing windowId' });
+    expect(sendResponse).toHaveBeenNthCalledWith(2, { status: 'error', message: 'Invalid or missing windowId' });
 
     warnSpy.mockRestore();
   });
