@@ -60,6 +60,20 @@ describe('handleMessage', () => {
     expect(sendResponse).toHaveBeenCalledWith({ status: 'success' });
   });
 
+  test('returns an error response when splitTabs rejects', async () => {
+    const sendResponse = jest.fn();
+    splitTabs.mockRejectedValue(new Error('Split failed'));
+
+    const result = handleMessage({ action: 'split', windowId: 123 }, {}, sendResponse);
+
+    expect(result).toBe(true);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(sendResponse).toHaveBeenCalledWith({ status: 'error', message: 'Split failed' });
+  });
+
   test('calls mergeAllWindows when action is merge and keeps the message channel open', async () => {
     const sendResponse = jest.fn();
 
@@ -71,6 +85,20 @@ describe('handleMessage', () => {
     await Promise.resolve();
 
     expect(sendResponse).toHaveBeenCalledWith({ status: 'success' });
+  });
+
+  test('returns an error response when mergeAllWindows rejects', async () => {
+    const sendResponse = jest.fn();
+    mergeAllWindows.mockRejectedValue(new Error('Merge failed'));
+
+    const result = handleMessage({ action: 'merge', windowId: 789 }, {}, sendResponse);
+
+    expect(result).toBe(true);
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(sendResponse).toHaveBeenCalledWith({ status: 'error', message: 'Merge failed' });
   });
 
   test('ignores unknown action', () => {

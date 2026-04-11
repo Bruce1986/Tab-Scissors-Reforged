@@ -58,6 +58,20 @@ describe('splitTabs', () => {
     expect(chrome.windows.create).not.toHaveBeenCalled();
     expect(chrome.tabs.move).not.toHaveBeenCalled();
   });
+
+  test('rethrows errors after logging when split fails', async () => {
+    const error = new Error('Query failed');
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      chrome.tabs.query.mockRejectedValue(error);
+
+      await expect(splitTabs(999)).rejects.toThrow('Query failed');
+      expect(consoleSpy).toHaveBeenCalledWith('splitTabs failed:', error);
+    } finally {
+      consoleSpy.mockRestore();
+    }
+  });
 });
 
 describe('mergeAllWindows', () => {
@@ -95,21 +109,37 @@ describe('mergeAllWindows', () => {
     const error = new Error('Move failed');
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    chrome.windows.getAll.mockResolvedValue([
-      { id: 1, tabs: [{ id: 10 }] },
-      { id: 2, tabs: [{ id: 20 }] },
-      { id: 3, tabs: [{ id: 30 }] }
-    ]);
-    chrome.tabs.move
-      .mockRejectedValueOnce(error)
-      .mockResolvedValueOnce([]);
+    try {
+      chrome.windows.getAll.mockResolvedValue([
+        { id: 1, tabs: [{ id: 10 }] },
+        { id: 2, tabs: [{ id: 20 }] },
+        { id: 3, tabs: [{ id: 30 }] }
+      ]);
+      chrome.tabs.move
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce([]);
 
-    await mergeAllWindows(targetWindowId);
+      await mergeAllWindows(targetWindowId);
 
-    expect(chrome.tabs.move).toHaveBeenNthCalledWith(1, [20], { windowId: targetWindowId, index: -1 });
-    expect(chrome.tabs.move).toHaveBeenNthCalledWith(2, [30], { windowId: targetWindowId, index: -1 });
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to move tabs from window 2:', error);
+      expect(chrome.tabs.move).toHaveBeenNthCalledWith(1, [20], { windowId: targetWindowId, index: -1 });
+      expect(chrome.tabs.move).toHaveBeenNthCalledWith(2, [30], { windowId: targetWindowId, index: -1 });
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to move tabs from window 2:', error);
+    } finally {
+      consoleSpy.mockRestore();
+    }
+  });
 
-    consoleSpy.mockRestore();
+  test('rethrows outer errors after logging when merge setup fails', async () => {
+    const error = new Error('Get all failed');
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      chrome.windows.getAll.mockRejectedValue(error);
+
+      await expect(mergeAllWindows(1)).rejects.toThrow('Get all failed');
+      expect(consoleSpy).toHaveBeenCalledWith('mergeAllWindows failed:', error);
+    } finally {
+      consoleSpy.mockRestore();
+    }
   });
 });

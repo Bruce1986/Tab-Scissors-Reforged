@@ -28,6 +28,7 @@ export async function splitTabs(windowId) {
     }
   } catch (error) {
     console.error('splitTabs failed:', error);
+    throw error;
   }
 }
 
@@ -61,5 +62,6 @@ export async function mergeAllWindows(targetWindowId) {
     }
   } catch (error) {
     console.error('mergeAllWindows failed:', error);
+    throw error;
   }
 }

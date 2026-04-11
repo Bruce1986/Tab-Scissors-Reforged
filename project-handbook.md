@@ -117,6 +117,11 @@
 - ✅ 確認 `popup.html` 與 PNG icons 已存在且受 Git 追蹤，manifest 資產引用無缺漏
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 補上錯誤傳遞鏈：`tabManagement` rethrow、service worker 回傳 error response、popup 依 response 判定失敗
+- ✅ 補齊成功與失敗路徑測試，驗證 `handleMessage` 與 tab management 的錯誤處理行為
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

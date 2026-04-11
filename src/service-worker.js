@@ -21,10 +21,14 @@ export function handleMessage(message, _sender, _sendResponse) {
   }
 
   if (message.action === 'split') {
-    splitTabs(message.windowId).then(() => _sendResponse?.({ status: 'success' }));
+    splitTabs(message.windowId)
+      .then(() => _sendResponse?.({ status: 'success' }))
+      .catch(error => _sendResponse?.({ status: 'error', message: error.message }));
     return true;
   } else if (message.action === 'merge') {
-    mergeAllWindows(message.windowId).then(() => _sendResponse?.({ status: 'success' }));
+    mergeAllWindows(message.windowId)
+      .then(() => _sendResponse?.({ status: 'success' }))
+      .catch(error => _sendResponse?.({ status: 'error', message: error.message }));
     return true;
   } else {
     console.warn(`[Tab Scissors] Unsupported action: ${message.action}`);
