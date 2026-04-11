@@ -10,7 +10,7 @@ export async function handleCommand(command) {
   }
 }
 
-export function handleMessage(message, _sender, _sendResponse) {
+export function handleMessage(message, _sender, sendResponse) {
   if (!message || typeof message !== 'object' || typeof message.action !== 'string') {
     return;
   }
@@ -22,13 +22,13 @@ export function handleMessage(message, _sender, _sendResponse) {
 
   if (message.action === 'split') {
     splitTabs(message.windowId)
-      .then(() => _sendResponse?.({ status: 'success' }))
-      .catch(error => _sendResponse?.({ status: 'error', message: error.message }));
+      .then(() => sendResponse?.({ status: 'success' }))
+      .catch(error => sendResponse?.({ status: 'error', message: error.message }));
     return true;
   } else if (message.action === 'merge') {
     mergeAllWindows(message.windowId)
-      .then(() => _sendResponse?.({ status: 'success' }))
-      .catch(error => _sendResponse?.({ status: 'error', message: error.message }));
+      .then(() => sendResponse?.({ status: 'success' }))
+      .catch(error => sendResponse?.({ status: 'error', message: error.message }));
     return true;
   } else {
     console.warn(`[Tab Scissors] Unsupported action: ${message.action}`);

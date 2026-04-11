@@ -127,6 +127,11 @@
 - ✅ 補上 popup 對 `undefined` response 的防呆，避免背景腳本未回應時出現誤判
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 將 popup 的 split/merge 點擊流程抽成共用 helper，降低重複邏輯
+- ✅ 修正 `handleMessage` 的 `sendResponse` 參數命名，讓已使用參數與命名慣例一致
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結
