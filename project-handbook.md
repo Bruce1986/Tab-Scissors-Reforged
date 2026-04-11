@@ -112,6 +112,11 @@
 - ✅ 補上單元測試，確認單一視窗移動失敗時仍會繼續合併其他視窗
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 修正 MV3 `onMessage` 非同步回應流程，補上 `return true` 與 success response
+- ✅ 確認 `popup.html` 與 PNG icons 已存在且受 Git 追蹤，manifest 資產引用無缺漏
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

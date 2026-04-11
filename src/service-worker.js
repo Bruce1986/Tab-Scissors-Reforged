@@ -21,9 +21,11 @@ export function handleMessage(message, _sender, _sendResponse) {
   }
 
   if (message.action === 'split') {
-    splitTabs(message.windowId);
+    splitTabs(message.windowId).then(() => _sendResponse?.({ status: 'success' }));
+    return true;
   } else if (message.action === 'merge') {
-    mergeAllWindows(message.windowId);
+    mergeAllWindows(message.windowId).then(() => _sendResponse?.({ status: 'success' }));
+    return true;
   } else {
     console.warn(`[Tab Scissors] Unsupported action: ${message.action}`);
   }

@@ -43,16 +43,34 @@ describe('handleCommand', () => {
 describe('handleMessage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    splitTabs.mockResolvedValue(undefined);
+    mergeAllWindows.mockResolvedValue(undefined);
   });
 
-  test('calls splitTabs when action is split', () => {
-    handleMessage({ action: 'split', windowId: 123 }, {}, jest.fn());
+  test('calls splitTabs when action is split and keeps the message channel open', async () => {
+    const sendResponse = jest.fn();
+
+    const result = handleMessage({ action: 'split', windowId: 123 }, {}, sendResponse);
+
     expect(splitTabs).toHaveBeenCalledWith(123);
+    expect(result).toBe(true);
+
+    await Promise.resolve();
+
+    expect(sendResponse).toHaveBeenCalledWith({ status: 'success' });
   });
 
-  test('calls mergeAllWindows when action is merge', () => {
-    handleMessage({ action: 'merge', windowId: 789 }, {}, jest.fn());
+  test('calls mergeAllWindows when action is merge and keeps the message channel open', async () => {
+    const sendResponse = jest.fn();
+
+    const result = handleMessage({ action: 'merge', windowId: 789 }, {}, sendResponse);
+
     expect(mergeAllWindows).toHaveBeenCalledWith(789);
+    expect(result).toBe(true);
+
+    await Promise.resolve();
+
+    expect(sendResponse).toHaveBeenCalledWith({ status: 'success' });
   });
 
   test('ignores unknown action', () => {
