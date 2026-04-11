@@ -157,6 +157,11 @@
 - ✅ 補上測試，驗證同一視窗的不同 action 也會被統一阻擋直到前一個操作完成
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 更新 `README.md`，對齊 popup、service worker、incognito 與測試現況
+- ✅ 新增 `WORKLOG.md` 並補齊文件維護紀錄，方便後續追蹤文件更新
+- 🧪 文件更新：未涉及程式邏輯變更，未額外執行測試
+
 ---
 
 ## 📚 資源與文件連結
@@ -164,6 +169,15 @@
 * 🔗 Figma 設計稿：[點我前往](https://figma.com/xxxx)
 * 🔗 API 文件連結：[Swagger Docs](https://your-api-docs.com)
 * 🔗 技術指南 / Code Style：[點我查看](https://github.com/你的組織/code-style-guide)
+* 🔗 工作日誌：[WORKLOG.md](WORKLOG.md)
+
+---
+
+## 📘 文件維護流程
+
+1. 功能或流程有變動時，同步更新 `README.md`、`project-handbook.md` 與相關文件。
+2. 若本次工作有明確里程碑，請在 `WORKLOG.md` 補上日期、摘要與驗證結果。
+3. 若是 PR review 修正循環，請在文件中記錄最終收斂結果與重要決策，避免後續重複追查。
 
 ---
 
