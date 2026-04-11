@@ -101,6 +101,34 @@ describe('handleMessage', () => {
     expect(sendResponse).toHaveBeenCalledWith({ status: 'error', message: 'Merge failed' });
   });
 
+  test('rejects duplicate in-flight actions for the same window', async () => {
+    let resolveSplit;
+    const pendingSplit = new Promise(resolve => {
+      resolveSplit = resolve;
+    });
+    const firstResponse = jest.fn();
+    const secondResponse = jest.fn();
+    splitTabs.mockReturnValue(pendingSplit);
+
+    const firstResult = handleMessage({ action: 'split', windowId: 123 }, {}, firstResponse);
+    const secondResult = handleMessage({ action: 'split', windowId: 123 }, {}, secondResponse);
+
+    expect(firstResult).toBe(true);
+    expect(secondResult).toBeUndefined();
+    expect(splitTabs).toHaveBeenCalledTimes(1);
+    expect(secondResponse).toHaveBeenCalledWith({ status: 'error', message: 'split action already in progress.' });
+
+    resolveSplit();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const thirdResponse = jest.fn();
+    const thirdResult = handleMessage({ action: 'split', windowId: 123 }, {}, thirdResponse);
+
+    expect(thirdResult).toBe(true);
+  });
+
   test('ignores unknown action', () => {
     const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => { });
 

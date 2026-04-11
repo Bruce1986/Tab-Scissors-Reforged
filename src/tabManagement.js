@@ -50,6 +50,9 @@ export async function mergeAllWindows(targetWindowId) {
     if (windows.length < 2) return;
 
     const targetWindow = windows.find(win => win.id === targetWindowId);
+    if (!targetWindow) {
+      throw new Error('Target window not found.');
+    }
 
     // 遍歷所有視窗
     for (const win of windows) {

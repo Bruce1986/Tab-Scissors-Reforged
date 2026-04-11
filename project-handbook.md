@@ -147,6 +147,11 @@
 - ✅ 補齊 tab management 測試，驗證建立新視窗與跨視窗合併時的 incognito 邊界條件
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 補上 target window 驗證，避免 merge 時目標視窗不存在卻被誤判成功
+- ✅ 將 action pending 保護移到 service worker，讓 popup 關閉重開後仍能阻擋重複操作
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

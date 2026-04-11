@@ -149,6 +149,22 @@ describe('mergeAllWindows', () => {
     }
   });
 
+  test('throws when the target window does not exist', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      chrome.windows.getAll.mockResolvedValue([
+        { id: 2, incognito: false, tabs: [{ id: 20 }] },
+        { id: 3, incognito: false, tabs: [{ id: 30 }] }
+      ]);
+
+      await expect(mergeAllWindows(1)).rejects.toThrow('Target window not found.');
+      expect(consoleSpy).toHaveBeenCalledWith('mergeAllWindows failed:', expect.any(Error));
+    } finally {
+      consoleSpy.mockRestore();
+    }
+  });
+
   test('skips windows whose incognito state does not match the target window', async () => {
     const targetWindowId = 1;
     chrome.windows.getAll.mockResolvedValue([

@@ -1,6 +1,8 @@
 // src/service-worker.js
 import { splitTabs, mergeAllWindows } from './tabManagement.js';
 
+const pendingActions = new Set();
+
 export async function handleCommand(command) {
   const currentWindow = await chrome.windows.getCurrent();
   if (command === 'split-tabs') {
@@ -21,19 +23,30 @@ export function handleMessage(message, _sender, sendResponse) {
     return;
   }
 
-  if (message.action === 'split') {
-    splitTabs(message.windowId)
-      .then(() => sendResponse?.({ status: 'success' }))
-      .catch(error => sendResponse?.({ status: 'error', message: error.message }));
-    return true;
-  } else if (message.action === 'merge') {
-    mergeAllWindows(message.windowId)
-      .then(() => sendResponse?.({ status: 'success' }))
-      .catch(error => sendResponse?.({ status: 'error', message: error.message }));
-    return true;
-  } else {
+  const actionHandler = message.action === 'split'
+    ? splitTabs
+    : message.action === 'merge'
+      ? mergeAllWindows
+      : null;
+
+  if (!actionHandler) {
     console.warn(`[Tab Scissors] Unsupported action: ${message.action}`);
+    return;
   }
+
+  const pendingKey = `${message.action}:${message.windowId}`;
+  if (pendingActions.has(pendingKey)) {
+    sendResponse?.({ status: 'error', message: `${message.action} action already in progress.` });
+    return;
+  }
+
+  pendingActions.add(pendingKey);
+  actionHandler(message.windowId)
+    .then(() => sendResponse?.({ status: 'success' }))
+    .catch(error => sendResponse?.({ status: 'error', message: error.message }))
+    .finally(() => pendingActions.delete(pendingKey));
+
+  return true;
 }
 
 // Handle messages from popup
