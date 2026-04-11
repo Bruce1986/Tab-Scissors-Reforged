@@ -6,6 +6,7 @@
 - 更新 `README.md`，讓功能描述與目前實作一致，包含 popup 操作、service worker 訊息流程、incognito 相容性與測試方式。
 - 更新 `project-handbook.md`，補上 `WORKLOG.md` 連結與文件維護流程。
 - 整理這份工作日誌，讓近期 PR 修正與文件維護有固定落點可追蹤。
+- 更新 `AGENTS.md`、`GEMINI.md`、`CODE_REVIEW.md`，將過時內容收斂為目前可用的協作與歷史記錄版本。
 
 ### PR #12 review-fix cycle 摘要
 - 完成 popup 與 service worker 的 message routing 改造，加入 success / error response 與較完整的錯誤傳遞。
