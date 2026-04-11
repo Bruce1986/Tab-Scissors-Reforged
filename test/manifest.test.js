@@ -8,7 +8,7 @@ test('service worker is an ES module', () => {
 });
 
 test('extension icons are declared', () => {
-  expect(manifest).toHaveProperty('icons.16', 'icons/icon16.png');
-  expect(manifest).toHaveProperty('icons.48', 'icons/icon48.png');
-  expect(manifest).toHaveProperty('icons.128', 'icons/icon128.png');
+  expect(manifest).toHaveProperty('icons.16', 'icons/icon.svg');
+  expect(manifest).toHaveProperty('icons.48', 'icons/icon.svg');
+  expect(manifest).toHaveProperty('icons.128', 'icons/icon.svg');
 });

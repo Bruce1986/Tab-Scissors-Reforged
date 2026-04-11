@@ -122,6 +122,11 @@
 - ✅ 補齊成功與失敗路徑測試，驗證 `handleMessage` 與 tab management 的錯誤處理行為
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 將 manifest icon 改為共用 `icon.svg`，避免引用未納入 base branch 的 PNG 資產
+- ✅ 補上 popup 對 `undefined` response 的防呆，避免背景腳本未回應時出現誤判
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結
