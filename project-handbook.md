@@ -142,6 +142,11 @@
 - ✅ 補上 popup 執行中鎖定按鈕，避免連點造成重入與 Chrome API race condition
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 補上 incognito 視窗相容性，split/merge 會保留並比對隱私模式狀態
+- ✅ 補齊 tab management 測試，驗證建立新視窗與跨視窗合併時的 incognito 邊界條件
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結

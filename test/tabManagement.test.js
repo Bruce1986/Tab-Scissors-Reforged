@@ -19,7 +19,7 @@ describe('splitTabs', () => {
   });
 
   test('moves tabs to the right into new window', async () => {
-    const activeTab = { id: 1 };
+    const activeTab = { id: 1, incognito: false };
     const tabs = [activeTab, { id: 2 }, { id: 3 }];
     const windowId = 999;
 
@@ -29,12 +29,12 @@ describe('splitTabs', () => {
 
     await splitTabs(windowId);
 
-    expect(chrome.windows.create).toHaveBeenCalledWith({ tabId: 2 });
+    expect(chrome.windows.create).toHaveBeenCalledWith({ tabId: 2, incognito: false });
     expect(chrome.tabs.move).toHaveBeenCalledWith([3], { windowId: 100, index: -1 });
   });
 
   test('does nothing when the active tab is last', async () => {
-    const activeTab = { id: 3 };
+    const activeTab = { id: 3, incognito: false };
     const tabs = [{ id: 1 }, { id: 2 }, activeTab];
 
     chrome.tabs.query.mockResolvedValueOnce([activeTab]);
@@ -47,7 +47,7 @@ describe('splitTabs', () => {
   });
 
   test('throws when the active tab is missing from the tab list', async () => {
-    const activeTab = { id: 99 };
+    const activeTab = { id: 99, incognito: false };
     const tabs = [{ id: 1 }, { id: 2 }, { id: 3 }];
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -88,8 +88,8 @@ describe('mergeAllWindows', () => {
   test('moves tabs from other windows into the target window', async () => {
     const targetWindowId = 1;
     chrome.windows.getAll.mockResolvedValue([
-      { id: 1, tabs: [{ id: 10 }] },
-      { id: 2, tabs: [{ id: 20 }, { id: 21 }] }
+      { id: 1, incognito: false, tabs: [{ id: 10 }] },
+      { id: 2, incognito: false, tabs: [{ id: 20 }, { id: 21 }] }
     ]);
 
     await mergeAllWindows(targetWindowId);
@@ -100,9 +100,9 @@ describe('mergeAllWindows', () => {
   test('skips windows that have no tabs', async () => {
     const targetWindowId = 1;
     chrome.windows.getAll.mockResolvedValue([
-      { id: 1, tabs: [{ id: 10 }] },
-      { id: 2, tabs: [] },
-      { id: 3 }
+      { id: 1, incognito: false, tabs: [{ id: 10 }] },
+      { id: 2, incognito: false, tabs: [] },
+      { id: 3, incognito: false }
     ]);
 
     await mergeAllWindows(targetWindowId);
@@ -117,9 +117,9 @@ describe('mergeAllWindows', () => {
 
     try {
       chrome.windows.getAll.mockResolvedValue([
-        { id: 1, tabs: [{ id: 10 }] },
-        { id: 2, tabs: [{ id: 20 }] },
-        { id: 3, tabs: [{ id: 30 }] }
+        { id: 1, incognito: false, tabs: [{ id: 10 }] },
+        { id: 2, incognito: false, tabs: [{ id: 20 }] },
+        { id: 3, incognito: false, tabs: [{ id: 30 }] }
       ]);
       chrome.tabs.move
         .mockRejectedValueOnce(error)
@@ -147,5 +147,19 @@ describe('mergeAllWindows', () => {
     } finally {
       consoleSpy.mockRestore();
     }
+  });
+
+  test('skips windows whose incognito state does not match the target window', async () => {
+    const targetWindowId = 1;
+    chrome.windows.getAll.mockResolvedValue([
+      { id: 1, incognito: true, tabs: [{ id: 10 }] },
+      { id: 2, incognito: false, tabs: [{ id: 20 }, { id: 21 }] },
+      { id: 3, incognito: true, tabs: [{ id: 30 }] }
+    ]);
+
+    await mergeAllWindows(targetWindowId);
+
+    expect(chrome.tabs.move).toHaveBeenCalledTimes(1);
+    expect(chrome.tabs.move).toHaveBeenCalledWith([30], { windowId: targetWindowId, index: -1 });
   });
 });

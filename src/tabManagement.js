@@ -24,7 +24,10 @@ export async function splitTabs(windowId) {
     const tabIdsToMove = tabsToMove.map(t => t.id);
 
     // 建立一個新視窗，並直接將所有目標分頁移入
-    const newWindow = await chrome.windows.create({ tabId: tabIdsToMove[0] });
+    const newWindow = await chrome.windows.create({
+      tabId: tabIdsToMove[0],
+      incognito: activeTab.incognito
+    });
     if (tabIdsToMove.length > 1) {
       await chrome.tabs.move(tabIdsToMove.slice(1), { windowId: newWindow.id, index: -1 });
     }
@@ -46,10 +49,12 @@ export async function mergeAllWindows(targetWindowId) {
 
     if (windows.length < 2) return;
 
+    const targetWindow = windows.find(win => win.id === targetWindowId);
+
     // 遍歷所有視窗
     for (const win of windows) {
-      // 如果是目標視窗，就跳過
-      if (win.id === targetWindowId) continue;
+      // 如果是目標視窗或隱私模式不同，就跳過
+      if (win.id === targetWindowId || win.incognito !== targetWindow?.incognito) continue;
       // 如果視窗沒有分頁，也跳過
       if (!win.tabs || win.tabs.length === 0) continue;
 
