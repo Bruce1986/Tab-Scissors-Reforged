@@ -52,8 +52,12 @@ export async function mergeAllWindows(targetWindowId) {
 
       // 將其他視窗的所有分頁ID收集起來
       const tabIds = win.tabs.map(t => t.id);
-      // 將這些分頁移至目標視窗的最後
-      await chrome.tabs.move(tabIds, { windowId: targetWindowId, index: -1 });
+      try {
+        // 將這些分頁移至目標視窗的最後
+        await chrome.tabs.move(tabIds, { windowId: targetWindowId, index: -1 });
+      } catch (error) {
+        console.error(`Failed to move tabs from window ${win.id}:`, error);
+      }
     }
   } catch (error) {
     console.error('mergeAllWindows failed:', error);

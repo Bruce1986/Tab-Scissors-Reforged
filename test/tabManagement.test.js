@@ -89,4 +89,27 @@ describe('mergeAllWindows', () => {
 
     expect(chrome.tabs.move).not.toHaveBeenCalled();
   });
+
+  test('continues merging other windows when one move fails', async () => {
+    const targetWindowId = 1;
+    const error = new Error('Move failed');
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    chrome.windows.getAll.mockResolvedValue([
+      { id: 1, tabs: [{ id: 10 }] },
+      { id: 2, tabs: [{ id: 20 }] },
+      { id: 3, tabs: [{ id: 30 }] }
+    ]);
+    chrome.tabs.move
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce([]);
+
+    await mergeAllWindows(targetWindowId);
+
+    expect(chrome.tabs.move).toHaveBeenNthCalledWith(1, [20], { windowId: targetWindowId, index: -1 });
+    expect(chrome.tabs.move).toHaveBeenNthCalledWith(2, [30], { windowId: targetWindowId, index: -1 });
+    expect(consoleSpy).toHaveBeenCalledWith('Failed to move tabs from window 2:', error);
+
+    consoleSpy.mockRestore();
+  });
 });

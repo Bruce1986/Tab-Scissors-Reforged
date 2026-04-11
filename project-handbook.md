@@ -107,6 +107,11 @@
 - ✅ 依 CodeRabbit 建議補上 `windowId` 驗證，避免 message 導致跨視窗誤查詢
 - ✅ 自我測試：`npm test` 全數通過
 
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 依 Gemini review 調整 `mergeAllWindows`，改為每個視窗獨立處理 tab move 錯誤
+- ✅ 補上單元測試，確認單一視窗移動失敗時仍會繼續合併其他視窗
+- ✅ 自我測試：`npm test` 全數通過
+
 ---
 
 ## 📚 資源與文件連結
