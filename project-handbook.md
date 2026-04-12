@@ -154,9 +154,6 @@
 
 ### 🤖 AI Assistant 日誌（2026/04/12）
 - ✅ 依 Gemini review 將 service worker lock 收斂為每視窗一把鎖，避免 split/merge 在同一視窗交錯競爭
-- ✅ 補上測試，驗證同一視窗的不同 action 也會被統一阻擋直到前一個操作完成
-- ✅ 自我測試：`npm test` 全數通過
-
 ### 🤖 AI Assistant 日誌（2026/04/12）
 - ✅ 更新 `README.md`，對齊 popup、service worker、incognito 與測試現況
 - ✅ 新增 `WORKLOG.md` 並補齊文件維護紀錄，方便後續追蹤文件更新
