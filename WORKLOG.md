@@ -17,6 +17,3 @@
 ### 驗證結果
 - 最近一次功能相關驗證：`npm test`
 - 結果：`31/31` tests passing
-
-### 備註
-- 本次文件更新未修改使用者本地未提交的 `AGENTS.md`、`GEMINI.md`、`CODE_REVIEW.md`。
