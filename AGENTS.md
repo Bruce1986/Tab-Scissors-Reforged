@@ -18,8 +18,16 @@
 
 ## PR Review 修正流程
 
-如果是在修 GitHub PR comment，請依 `GEMINI.md` 的「PR review 修正節奏」執行完整循環：
-[`GEMINI.md`](GEMINI.md#pr-review-修正節奏)
+若是在修 GitHub PR review，請採用以下循環：
+
+1. 抓最新 review 與遠端更新
+2. 對齊遠端
+3. 修正 comment
+4. 跑測試
+5. commit / push
+6. 留言 `/Gemini review`
+7. 等待 `210` 秒
+8. 重複直到 bot 明確表示沒有進一步意見
 
 ## 文件維護要求
 
