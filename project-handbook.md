@@ -154,8 +154,12 @@
 
 ### 🤖 AI Assistant 日誌（2026/04/12）
 - ✅ 依 Gemini review 將 service worker lock 收斂為每視窗一把鎖，避免 split/merge 在同一視窗交錯競爭
-- ✅ 補上測試，驗證同一視窗的不同 action 也會被統一阻擋直到前一個操作完成
-- ✅ 自我測試：`npm test` 全數通過
+### 🤖 AI Assistant 日誌（2026/04/12）
+- ✅ 更新 `README.md`，對齊 popup、service worker、incognito 與測試現況
+- ✅ 新增 `WORKLOG.md` 並補齊文件維護紀錄，方便後續追蹤文件更新
+- ✅ 更新 `AGENTS.md`、`GEMINI.md`、`CODE_REVIEW.md`，移除過時重複內容並補上目前狀態摘要
+- ✅ 將 AI 協作入口文件收斂為連結導向，避免再維護多份舊版 handbook 副本
+- 🧪 文件更新：未涉及程式邏輯變更，未額外執行測試
 
 ---
 
@@ -164,6 +168,15 @@
 * 🔗 Figma 設計稿：[點我前往](https://figma.com/xxxx)
 * 🔗 API 文件連結：[Swagger Docs](https://your-api-docs.com)
 * 🔗 技術指南 / Code Style：[點我查看](https://github.com/你的組織/code-style-guide)
+* 🔗 工作日誌：[WORKLOG.md](WORKLOG.md)
+
+---
+
+## 📘 文件維護流程
+
+1. 功能或流程有變動時，同步更新 `README.md`、`project-handbook.md` 與相關文件。
+2. 若本次工作有明確里程碑，請在 `WORKLOG.md` 補上日期、摘要與驗證結果。
+3. 若是 PR review 修正循環，請在文件中記錄最終收斂結果與重要決策，避免後續重複追查。
 
 ---
 
