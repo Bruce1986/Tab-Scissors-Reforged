@@ -1,7 +1,7 @@
 /**
- * Split tabs so that tabs to the right of the active tab move into a new window.
- * @returns {Promise<void>}
- */
+ * Split tabs so that tabs to the right of the active tab move into a new window.
+ * @returns {Promise<void>}
+ */
 export async function splitTabs() {
   try {
     const allTabsInWindow = await chrome.tabs.query({ currentWindow: true });
@@ -16,12 +16,13 @@ export async function splitTabs() {
     const tabIdsToMove = tabsToMove.map((t) => t.id);
 
     const newWindow = await chrome.windows.create({ state: 'normal' });
+    let initialTab;
 
     // All operations after window creation are wrapped in a try/catch
     // to ensure the new window is cleaned up on any failure.
     try {
       // Get the initial tab that comes with the new window.
-      const [initialTab] = await chrome.tabs.query({ windowId: newWindow.id });
+      [initialTab] = await chrome.tabs.query({ windowId: newWindow.id });
 
       // If the new window is unexpectedly empty, throw to trigger cleanup.
       if (!initialTab) {
@@ -45,15 +46,7 @@ export async function splitTabs() {
       }
     } catch (error) {
       console.error('Failed to prepare the new window or move tabs:', error);
-      // Clean up the new window if any step in the process fails.
-      try {
-        await chrome.windows.remove(newWindow.id);
-      } catch (cleanupError) {
-        console.error(
-          `Failed to clean up window ${newWindow.id} after an error:`,
-          cleanupError
-        );
-      }
+      await cleanUpNewWindow(newWindow.id, tabIdsToMove);
     }
   } catch (error) {
     console.error('An unexpected error occurred in splitTabs:', error);
@@ -61,13 +54,43 @@ export async function splitTabs() {
 }
 
 /**
- * Merge all open Chrome windows into one.
- * @returns {Promise<void>}
- */
+ * Close a window created by splitTabs after a failure, unless some of the
+ * user's tabs already made it into the window. A multi-id chrome.tabs.move()
+ * can reject after moving only part of the list, and closing the window then
+ * would close those tabs too.
+ * @param {number} windowId The window created by splitTabs.
+ * @param {number[]} movedTabIds The tab ids splitTabs tried to move.
+ * @returns {Promise<void>}
+ */
+async function cleanUpNewWindow(windowId, movedTabIds) {
+  try {
+    const remaining = await chrome.tabs.query({ windowId });
+    if (remaining.some((t) => movedTabIds.includes(t.id))) {
+      console.error(
+        `Kept window ${windowId} because some tabs were already moved into it.`
+      );
+      return;
+    }
+    await chrome.windows.remove(windowId);
+  } catch (cleanupError) {
+    console.error(
+      `Failed to clean up window ${windowId} after an error:`,
+      cleanupError
+    );
+  }
+}
+
+/**
+ * Merge all open Chrome windows into one.
+ * @returns {Promise<void>}
+ */
 export async function mergeAllWindows() {
   try {
     // Get all windows and find the currently focused one.
-    const windows = await chrome.windows.getAll({ populate: true });
+    const windows = await chrome.windows.getAll({
+      populate: true,
+      windowTypes: ['normal'],
+    });
     const currentWindow = windows.find((w) => w.focused);
 
     // If no window is focused, we cannot merge.
@@ -92,8 +115,8 @@ export async function mergeAllWindows() {
     // behaviour either. It would, however, let one bad window (e.g. a tab that
     // closed between getAll() and move()) abort the whole merge. Handling each
     // window separately keeps such a failure isolated: the remaining windows
-    // are still merged, and a window whose move failed is left untouched
-    // instead of being closed with its tabs (see the
+    // are still merged, and a window whose move was rejected is never closed,
+    // so any tabs still in it stay open (see the
     // "should continue merging other windows if one fails" test).
     for (const win of windowsToMerge) {
       try {
@@ -102,9 +125,25 @@ export async function mergeAllWindows() {
           windowId: currentWindow.id,
           index: -1,
         });
-        await chrome.windows.remove(win.id);
       } catch (error) {
         console.error(`Failed to merge window ${win.id}:`, error);
+        continue;
+      }
+
+      // Chrome normally closes a window by itself once its last tab has been
+      // moved out, so the window may already be gone here. Only close it if it
+      // is empty; tabs opened in it after getAll() must not be closed.
+      try {
+        const remaining = await chrome.tabs.query({ windowId: win.id });
+        if (remaining.length > 0) {
+          console.error(
+            `Window ${win.id} still has ${remaining.length} tab(s) after merging; leaving it open.`
+          );
+          continue;
+        }
+        await chrome.windows.remove(win.id);
+      } catch {
+        // The window was already closed by Chrome; nothing left to do.
       }
     }
   } catch (error) {
