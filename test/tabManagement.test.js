@@ -43,6 +43,7 @@ describe('splitTabs', () => {
 
     // Assert
     expect(chrome.tabs.query).toHaveBeenCalledWith({ currentWindow: true });
+    expect(chrome.windows.create).toHaveBeenCalledWith({ state: 'normal', incognito: false });
     expect(chrome.tabs.move).toHaveBeenCalledWith([2, 3], { windowId: 100, index: -1 });
     expect(chrome.tabs.remove).toHaveBeenCalledWith(initialTab.id);
     // The new window must not be torn down on the success path.
@@ -50,11 +51,30 @@ describe('splitTabs', () => {
   });
 
   test('should do nothing if no tab is active', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     chrome.tabs.query.mockResolvedValueOnce([{ id: 1, active: false, index: 0 }]);
 
     await splitTabs();
 
     expect(chrome.windows.create).not.toHaveBeenCalled();
+    // Returning early must not go through the top-level error handler.
+    expect(console.error).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  test('should open the new window in incognito when splitting an incognito window', async () => {
+    chrome.tabs.query
+      .mockResolvedValueOnce([
+        { id: 1, active: true, index: 0, incognito: true },
+        { id: 2, active: false, index: 1, incognito: true },
+      ])
+      .mockResolvedValueOnce([{ id: 99 }]);
+    chrome.windows.create.mockResolvedValue({ id: 100 });
+
+    await splitTabs();
+
+    expect(chrome.windows.create).toHaveBeenCalledWith({ state: 'normal', incognito: true });
+    expect(chrome.tabs.move).toHaveBeenCalledWith([2], { windowId: 100, index: -1 });
   });
 
   test('should do nothing if there are no tabs to the right', async () => {
@@ -249,6 +269,7 @@ describe('mergeAllWindows', () => {
   });
 
   test('skips windows without tabs', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const windows = [
       { id: 1, focused: true, tabs: [{ id: 10 }] },
       { id: 2, focused: false, tabs: [] },
@@ -260,6 +281,9 @@ describe('mergeAllWindows', () => {
 
     expect(chrome.tabs.move).not.toHaveBeenCalled();
     expect(chrome.windows.remove).not.toHaveBeenCalled();
+    // Windows without a tabs array must be filtered out, not crash the merge.
+    expect(console.error).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 
   test('should do nothing if only one window exists', async () => {

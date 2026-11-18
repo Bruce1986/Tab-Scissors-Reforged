@@ -15,7 +15,12 @@ export async function splitTabs() {
 
     const tabIdsToMove = tabsToMove.map((t) => t.id);
 
-    const newWindow = await chrome.windows.create({ state: 'normal' });
+    // Tabs cannot move between incognito and regular windows, so the new
+    // window must match the incognito state of the window being split.
+    const newWindow = await chrome.windows.create({
+      state: 'normal',
+      incognito: Boolean(activeTab.incognito),
+    });
     let initialTab;
 
     // All operations after window creation are wrapped in a try/catch
@@ -143,7 +148,9 @@ export async function mergeAllWindows() {
         }
         await chrome.windows.remove(win.id);
       } catch {
-        // The window was already closed by Chrome; nothing left to do.
+        // The tabs were already merged, so a failure to query or close the
+        // source window is not a merge failure. The expected case is that
+        // Chrome has already closed the emptied window.
       }
     }
   } catch (error) {
