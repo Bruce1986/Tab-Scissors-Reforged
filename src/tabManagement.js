@@ -84,6 +84,17 @@ export async function mergeAllWindows() {
     if (windowsToMerge.length === 0) return;
 
     // Process all merge operations sequentially to ensure deterministic tab order.
+    //
+    // Windows are merged one at a time on purpose rather than with a single
+    // chrome.tabs.move() over every tab id. A multi-id move is not
+    // transactional: if it rejects part-way, some tabs have already moved and
+    // there is no rollback, so a single call would not give all-or-nothing
+    // behaviour either. It would, however, let one bad window (e.g. a tab that
+    // closed between getAll() and move()) abort the whole merge. Handling each
+    // window separately keeps such a failure isolated: the remaining windows
+    // are still merged, and a window whose move failed is left untouched
+    // instead of being closed with its tabs (see the
+    // "should continue merging other windows if one fails" test).
     for (const win of windowsToMerge) {
       try {
         const tabIds = win.tabs.map((t) => t.id);
